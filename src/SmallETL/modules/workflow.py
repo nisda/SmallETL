@@ -11,6 +11,8 @@ from datetime import datetime
 import uuid
 from pathlib import Path
 
+
+from .const import ExitCode
 from ..utils.small_etl import SmallEtlUtils
 from .job_info import JobInfo
 from ..libs import format_ex
@@ -104,23 +106,44 @@ class WorkFlow:
             dump_dir:Path = SmallEtlUtils.make_dump_dir(path=dump_dir_str)
         logger.debug(f"dump_dir: {dump_dir}")
 
-        # graph 実行
-        results:List = self.__exec_graph(
-            dump_dir = dump_dir,
-            graph = self.graph,
-            user_vars = user_vars,
-            wf_vars = wf_vars,
-        )
+        try:
 
-        # 終了処理
-        end_time:datetime = datetime.now()
-        logger.info(f"[{run_id}] End Workflow `{self.name}`")
-        return {
-            "run_id" : run_id,
-            "start_time" : start_time,
-            "end_time" : end_time,
-            "results" : results,
-        }
+            # graph 実行
+            results:List = self.__exec_graph(
+                dump_dir = dump_dir,
+                graph = self.graph,
+                user_vars = user_vars,
+                wf_vars = wf_vars,
+            )
+
+            # 終了処理
+            end_time:datetime = datetime.now()
+            logger.info(f"[{run_id}] End Workflow `{self.name}`")
+            return {
+                "run_id" : run_id,
+                "start_time" : start_time,
+                "end_time" : end_time,
+                "status"  : ExitCode.Succeeded,
+                "results" : results,
+            }
+
+        except KeyboardInterrupt:
+            # 改行を入れる（暫定対応）
+            print()
+            print()
+
+            # 終了処理
+            end_time:datetime = datetime.now()
+            logger.warning(f"Catch KeyboardInterrupt")
+            logger.warning(f"[{run_id}] Aborted Workflow `{self.name}`")
+            return {
+                "run_id" : run_id,
+                "start_time" : start_time,
+                "end_time" : end_time,
+                "status"  : ExitCode.Aborted,
+                "results" : None,
+            }
+
 
 
     def __exec_graph(
