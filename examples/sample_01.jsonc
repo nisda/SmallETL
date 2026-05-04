@@ -1,0 +1,77 @@
+{
+    "name": "sample-001",
+    // "dump_dir" : "{var.work_dir}/dump/{wf.name}/{wf.start_time:%Y%m%d%H%M%S%f}_{wf.run_id}",
+    "dump_dir" : "{var.work_dir}/dump/{wf.name}/",
+    "max_workers": 5,
+    "graph": [
+        {
+            "name": "find_excel",
+            "job": "file.find",
+            "parameters" : {
+                "path" : "{var.work_dir}/input/*.xlsx"
+            }
+        },
+        {
+            "name": "choice_excel",
+            "job": "console.choice",
+            "parameters" : {
+                "choices"     : "{payload.find_excel}",
+                "message"     : "ファイルを選択してください。",
+                "list_format" : "{{filename}}, {{modified_iso}}"
+            }
+        },
+        {
+            "name": "read_excel_01",
+            "job": "excel.read",
+            "parameters" : {
+                "path" : "{payload.choice_excel.path}",
+                "sheetname" : "ユーザー",
+                "min_col": "B",
+                "min_row": 1
+            }
+        },
+        {
+            "name": "read_excel_02",
+            "job": "excel.read",
+            "parameters" : {
+                "path" : "{payload.choice_excel.path}",
+                "sheetname" : "国"
+            }
+        },
+        {
+            "name": "get_holidays",
+            "job": "calendar.get_public_holidays_jp",
+            "parameters" : {
+                "start_date" : "{wf.start_time}"
+            }
+        },
+        // {
+        //     "name": "confirm",
+        //     "job": "console.confirm_continue",
+        //     "parameters" : {
+        //         "message" : ["----", "処理を続行しますか？"],
+        //         "prompt"  : "中止は [CTRL+C]"
+        //     }
+        // },
+        {
+            "name": "pass_01",
+            "job": "flow.Pass",
+            "parameters" : {
+                "dummy_1" : "DUMMY1",
+                "dummy_2" : "DUMMY2"
+            }
+        },
+        {
+            "name": "sleep_01",
+            "job": "flow.Sleep",
+            "parameters" : {
+                "seconds" : 0.2
+            }
+        },
+        {
+            "depends" : ["pass_01", "sleep_01"],
+            "name": "pass_02",
+            "job": "flow.Pass"
+        }
+    ]
+}

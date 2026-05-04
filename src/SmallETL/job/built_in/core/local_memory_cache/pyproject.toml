@@ -1,0 +1,12 @@
+[tool.pytest.ini_options]
+
+### include-path
+pythonpath = [
+  "src"
+]
+
+### logger-config
+log_cli = true
+log_cli_level = "WARNING"
+log_cli_format = "%(asctime)s.%(msecs)-3d | %(filename)s:%(lineno)d | %(funcName)s | %(levelname)-8s | %(message)s"
+log_cli_date_format = "%y-%m-%d %H.%M.%S"
