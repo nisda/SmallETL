@@ -45,27 +45,43 @@ class JsonEx():
 
 
     @staticmethod
-    def __convert_jsonc_to_json(jsonc_expr:str):
+    def __convert_jsonc_to_json(jsonc_text:str):
         # 正規表現でコメントを削除
-        return re.sub(r'/\*[\s\S]*?\*/|//.*', '', jsonc_expr)
+        return re.sub(r'/\*[\s\S]*?\*/|//.*', '', jsonc_text)
+
+
+    @staticmethod
+    def __remove_comments(jsonc_text:str):
+        pattern = r'("(?:\\.|[^"\\])*")|/\*[\s\S]*?\*/|//.*'
+       
+        def replace(match):
+            if match.group(1) is not None:
+                # 文字列ならそのまま返す（保護）
+                return match.group(1)
+            else:
+                # コメントなら空文字に置換
+                return ""
+
+        # re.DOTALL は不要（//.* が改行を超えないようにするため）
+        return re.sub(pattern, replace, jsonc_text)
 
 
 
     @staticmethod
-    def loads(expr:str) -> Any:
-        json_expr:str = JsonEx.__convert_jsonc_to_json(expr)
+    def loads(expr:str) -> str|Dict|List:
+        # json_expr:str = JsonEx.__convert_jsonc_to_json(expr)
+        json_expr:str = JsonEx.__remove_comments(expr)
         json_obj = origin_json.loads(json_expr)
         return json_obj
 
 
 
     @staticmethod
-    def load(path: str, encoding: str = 'utf-8') -> Any:
+    def load(path: str, encoding: str = 'utf-8') -> str|Dict|List:
         with open(path, 'r', encoding=encoding) as f:
             src_expr = f.read()
         json_obj = JsonEx.loads(expr=src_expr)
         return json_obj
-
 
 
     @staticmethod
@@ -82,7 +98,7 @@ class JsonEx():
 
 
     @staticmethod
-    def dump(obj:Any, path:str, encoding:str="utf-8", cls=CustomJSONEncoder, indent:int=2, ensure_ascii:bool=False, sort_keys:bool=False, **kwargs) -> str:
+    def dump(obj:Any, path:str, encoding:str="utf-8", cls=CustomJSONEncoder, indent:int=2, ensure_ascii:bool=False, sort_keys:bool=False, **kwargs):
         with open(path, 'w', encoding=encoding) as f:
             origin_json.dump(
                 obj,

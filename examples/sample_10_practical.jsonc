@@ -1,8 +1,6 @@
 {
-    "name": "sample-001",
-    // "dump_dir" : "{var.work_dir}/dump/{wf.name}/{wf.start_time:%Y%m%d%H%M%S%f}_{wf.run_id}",
-    "dump_dir" : "{var.work_dir}/dump/{wf.name}/",
-    "max_workers": 5,
+    "name": "sample-010",
+    "dump_dir" : "{var.work_dir}/dump/{wf.name}/{wf.start_time:%Y%m%d%H%M%S%f}_{wf.run_id}",
     "graph": [
         {
             "name": "find_excel",
@@ -12,10 +10,10 @@
             }
         },
         {
-            "name": "choice_excel",
-            "job": "console.choice",
+            "name": "select_excel",
+            "job": "console.select",
             "parameters" : {
-                "choices"     : "{payload.find_excel}",
+                "options"     : "{payload.find_excel}",
                 "message"     : "ファイルを選択してください。",
                 "list_format" : "{{filename}}, {{modified_iso}}"
             }
@@ -24,7 +22,7 @@
             "name": "read_excel_01",
             "job": "excel.read",
             "parameters" : {
-                "path" : "{payload.choice_excel.path}",
+                "path" : "{payload.select_excel.path}",
                 "sheetname" : "ユーザー",
                 "min_col": "B",
                 "min_row": 1
@@ -34,7 +32,7 @@
             "name": "read_excel_02",
             "job": "excel.read",
             "parameters" : {
-                "path" : "{payload.choice_excel.path}",
+                "path" : "{payload.select_excel.path}",
                 "sheetname" : "国"
             }
         },
@@ -45,21 +43,28 @@
                 "start_date" : "{wf.start_time}"
             }
         },
-        // {
-        //     "name": "confirm",
-        //     "job": "console.confirm_continue",
-        //     "parameters" : {
-        //         "message" : ["----", "処理を続行しますか？"],
-        //         "prompt"  : "中止は [CTRL+C]"
-        //     }
-        // },
         {
-            "name": "pass_01",
-            "job": "flow.Pass",
+            "name": "confirm",
+            "job": "console.confirm_continue",
             "parameters" : {
-                "dummy_1" : "DUMMY1",
-                "dummy_2" : "DUMMY2"
+                "message" : ["----", "処理を続行しますか？"],
+                "prompt"  : "中止は [CTRL+C]"
             }
+        },
+        {
+            "name": "loop-A",
+            "flow": "each",
+            "items": "{payload.read_excel_01}",
+            "graph" : [
+                {
+                    "name": "pass_01",
+                    "job": "flow.Pass",
+                    "parameters" : {
+                        "dummy_1" : "DUMMY1",
+                        "dummy_2" : "DUMMY2"
+                    }
+                }
+            ]
         },
         {
             "name": "sleep_01",
@@ -69,7 +74,7 @@
             }
         },
         {
-            "depends" : ["pass_01", "sleep_01"],
+            "depends" : ["sleep_01"],
             "name": "pass_02",
             "job": "flow.Pass"
         }

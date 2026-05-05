@@ -23,8 +23,8 @@ def confirm_continue(
 
 
 
-def choice(
-        choices:List[Dict],
+def select(
+        options:List[Dict],
         message:str="選択してください。",
         list_format:str=None, # 未指定時はカンマ区切り
     ):
@@ -37,11 +37,11 @@ def choice(
     else:
         captions:List[str] = [
             list_format.format(**c)
-            for c in choices
+            for c in options
         ]
 
 
-    count = len(choices)
+    count = len(options)
     def __disp():
         print()
         print(message)
@@ -61,7 +61,7 @@ def choice(
         try:
             num:int = int(input_num)
             if 0 <= num and num < count:
-                return choices[num]
+                return options[num]
         except Exception as e:
             pass
 

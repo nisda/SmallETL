@@ -1,20 +1,17 @@
 # coding: utf-8
 
-from typing import Dict, List, Union, Optional, Any, Self, Type, overload, Set, Tuple
-import sys
+from typing import Dict, Any, overload
 import logging
-import json
-from copy import deepcopy
-from pprint import pprint
 from pathlib import Path
 from datetime import datetime
 import uuid
 from pathlib import Path
-
+import os
+import glob
+import shutil
 
 from .const import ExitCode
-from ..utils.small_etl import SmallEtlUtils
-from .job_info import JobInfo
+from .graph import GraphInfo
 from ..libs import format_ex
 from ..libs.json_ex import JsonEx
 
@@ -23,23 +20,72 @@ from ..libs.json_ex import JsonEx
 logger = logging.getLogger(__name__)
 
 
+class DumpWriter():
 
-class WorkFlow:
+    @property
+    def dir(self) -> str:
+        return self.__dump_dir
+
+    def __init__(self, dir:str):
+        self.__dump_dir:Path = self.__make_dump_dir(path=dir)
+
+
+    def __make_dump_dir(self, path:str) -> Path:
+        """dumpディレクトリ作成"""
+
+        if path is None:
+            return None
+
+        cwd:Path = Path.cwd()
+        dump_dir:Path = cwd.joinpath(path)
+
+        if os.path.isdir(dump_dir):
+            # 既にフォルダが存在する場合は中身を全削除
+            files = glob.glob(f"{dump_dir}/*")
+            for f in files:
+                if os.path.isfile(f):
+                    os.remove(f)
+                elif os.path.isdir(f):
+                    shutil.rmtree(f)
+
+        dump_dir.mkdir(exist_ok=True, parents=True)
+        return dump_dir
+
+    
+    def put(self, filename:str, content:Any) -> Path:
+        """書き込み"""
+
+        if self.__dump_dir is None:
+            return None
+
+        # dump出力
+        dump_path: Path = self.__dump_dir.joinpath(filename)
+        JsonEx.dump(content, dump_path)
+        return dump_path
+
+
+
+
+class WorkFlow():
 
     @property
     def name(self) -> str:
         return self.__name
 
     @property
+    def description(self) -> str:
+        return self.__description
+
+    @property
+    def const(self) -> Dict[str, Any]:
+        return self.__const
+
+    @property
     def dump_dir(self) -> str:
         return self.__dump_dir
 
     @property
-    def max_workers(self) -> int:
-        return self.__max_workers
-
-    @property
-    def graph(self) -> List[JobInfo]:
+    def graph(self) -> GraphInfo:
         return self.__graph
 
 
@@ -52,12 +98,14 @@ class WorkFlow:
         pass
 
     def __init__(self, *, workflow:Dict={}, filepath:str = "", encoding:str="utf-8"):
-        logger.info(f"workflow: {type(workflow)}, filepath: {filepath}, encoding: {encoding}")
+        logger.info(f"workflow.type: <{type(workflow).__name__}>, filepath: {filepath}, encoding: {encoding}")
+
+        # workflow, filepath の入力はどちらか一方のみ許可
         if all([workflow, filepath]) or not any([workflow, filepath]):
             raise ValueError("You must specify either `workflow` or `filepath`.")
 
+        # 文字列の場合はファイルパスと見なし、jsonc として読み込み。
         if filepath:
-            # 文字列の場合はファイルパスと見なし、jsonc として読み込み。
             workflow = JsonEx.load(path=filepath, encoding=encoding)
 
         # Workflow定義をロード
@@ -69,13 +117,11 @@ class WorkFlow:
         logger.debug(f"workflow-def: {workflow_def}")
 
         # 情報読み込み
-        self.__name: str            = workflow_def["name"]
-        self.__dump_dir: str        = workflow_def.get("dump_dir", None)
-        self.__max_workers: int     = workflow_def.get("max_workers", None)
-        self.__graph: List[JobInfo]  = [
-            JobInfo(**job_def, package_path=__package__)
-            for job_def in workflow_def["graph"]
-        ]
+        self.__name:str             = workflow_def["name"]
+        self.__description:str      = workflow_def.get("description", None)
+        self.__const:Dict[str, Any] = workflow_def.get("const", None) or {}
+        self.__dump_dir:str         = workflow_def.get("dump_dir", None)
+        self.__graph:GraphInfo      = GraphInfo(workflow_def["graph"])
 
         # 終了
         return
@@ -89,42 +135,50 @@ class WorkFlow:
         logger.info(f"[{run_id}] Run Workflow `{self.name}`")
         start_time:datetime = datetime.now()
 
-        # 実行変数
-        user_vars:Dict = var
-        wf_vars:Dict = {
-            "name" : self.name,
-            "run_id" : run_id,
-            "start_time" : start_time,
+        # 変数の生成
+        variables:Dict[str, Any] = {
+            "var" : var,
+            "wf"    : {
+                "name" : self.name,
+                "run_id" : run_id,
+                "start_time" : start_time,
+            },
+        }
+        variables = {
+            **variables,
+            "const": format_ex.data_mapping(self.const, data=variables),
         }
 
+
         # dump ディレクトリ作成
-        dump_dir = None
-        if self.dump_dir:
-            dump_dir_str = format_ex.format(self.dump_dir, data={
-                "var" : user_vars, "wf": wf_vars
-            })
-            dump_dir:Path = SmallEtlUtils.make_dump_dir(path=dump_dir_str)
-        logger.debug(f"dump_dir: {dump_dir}")
+        dump_dir_str = format_ex.format(self.dump_dir, data=variables) if self.dump_dir else None
+        dump_writer = DumpWriter(dir=dump_dir_str)
+        logger.debug(f"dump_dir: {dump_writer.dir}")
+
 
         try:
+            # payload/outputs 初期化
+            outputs:Dict[str, Any] = {}
 
             # graph 実行
-            results:List = self.__exec_graph(
-                dump_dir = dump_dir,
-                graph = self.graph,
-                user_vars = user_vars,
-                wf_vars = wf_vars,
+            self.graph.run(
+                dump_prefix = "",
+                dump_writer = dump_writer,
+                variables   = variables,
+                payload     = outputs,
+                outputs     = outputs,
             )
 
             # 終了処理
             end_time:datetime = datetime.now()
             logger.info(f"[{run_id}] End Workflow `{self.name}`")
+            dump_writer.put(filename="_outputs.json", content=outputs)
             return {
                 "run_id" : run_id,
                 "start_time" : start_time,
                 "end_time" : end_time,
                 "status"  : ExitCode.Succeeded,
-                "results" : results,
+                "outputs" : outputs,
             }
 
         except KeyboardInterrupt:
@@ -136,43 +190,12 @@ class WorkFlow:
             end_time:datetime = datetime.now()
             logger.warning(f"Catch KeyboardInterrupt")
             logger.warning(f"[{run_id}] Aborted Workflow `{self.name}`")
+            dump_writer.put(filename="_outputs.json", content=outputs)
             return {
                 "run_id" : run_id,
                 "start_time" : start_time,
                 "end_time" : end_time,
                 "status"  : ExitCode.Aborted,
-                "results" : None,
+                "outputs" : None,
             }
-
-
-
-    def __exec_graph(
-            self:Self,
-            dump_dir:Path,
-            graph:List[JobInfo],
-            user_vars:Dict[str, Any],
-            wf_vars:Dict[str, Any],
-        ) -> Dict:
-        """ワークフロー実行（主処理）"""
-
-        # 実行番号の最大桁数（最低２桁に調整）
-        run_num_digit:int = max(len(str(len(graph))), 2)
-
-        # job実行（直列）
-        job_outputs:Dict = {}
-        for i, job_info in enumerate(graph):
-            # job実行
-            output = job_info.run(inputs=job_outputs, user_vars=user_vars, wf_vars=wf_vars)
-
-            # dump出力
-            if dump_dir:
-                num_str:str = str(i+1).zfill(run_num_digit)
-                dump_path:str = dump_dir / f"{num_str}_{job_info.name}.json"
-                JsonEx.dump(output, dump_path, encoding="utf-8")
-
-            # 実行結果を保存
-            job_outputs[job_info.name] = output
-
-        logger.debug(f"outputs: {job_outputs}")
-        return job_outputs
 

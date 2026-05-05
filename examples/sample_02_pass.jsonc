@@ -9,6 +9,20 @@
                 "dummy_1" : "DUMMY1",
                 "dummy_2" : "DUMMY2"
             }
+        },
+        {
+            "name": "pass_02",
+            "job": "flow.Pass",
+            "parameters" : [
+                "DUMMY1",
+                "DUMMY2",
+                "{payload.pass_01}"
+            ]
+        },
+        {
+            "name": "pass_03",
+            "job": "flow.Pass",
+            "parameters" : "{payload.pass_02[0]}"
         }
     ]
 }
