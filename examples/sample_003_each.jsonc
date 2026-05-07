@@ -1,5 +1,5 @@
 {
-    "name": "sample-03-each",
+    "name": "sample-003-each",
     "const" : {
         "a": "{var.work_dir}",
         "b": "{wf.run_id}"
@@ -15,8 +15,8 @@
                     "name": "pass_01",
                     "job": "flow.Pass",
                     "parameters" : {
-                        "dummy_1" : "{const.a} | {const.b}",
-                        "dummy_2" : "{each.index} | {each.key} | {each.value}"
+                        "const" : "{const.a} | {const.b}",
+                        "each" : "{each.index} | {each.key} | {each.value}"
                     }
                 },
                 {

@@ -12,8 +12,9 @@ import shutil
 
 from .const import ExitCode
 from .graph import GraphInfo
-from ..libs import format_ex
+from .shared import evaluater
 from ..libs.json_ex import JsonEx
+
 
 # 設定
 
@@ -146,12 +147,12 @@ class WorkFlow():
         }
         variables = {
             **variables,
-            "const": format_ex.data_mapping(self.const, data=variables),
+            "const": evaluater.format(self.const, mapping=variables),
         }
 
 
         # dump ディレクトリ作成
-        dump_dir_str = format_ex.format(self.dump_dir, data=variables) if self.dump_dir else None
+        dump_dir_str = evaluater.format(self.dump_dir, mapping=variables, recursive=False) if self.dump_dir else None
         dump_writer = DumpWriter(dir=dump_dir_str)
         logger.debug(f"dump_dir: {dump_writer.dir}")
 

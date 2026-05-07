@@ -53,28 +53,14 @@ class GraphInfo():
             # dump_prefix 生成
             dump_prefix_current = dump_prefix + str(i+1).zfill(run_num_digit)
 
-            # 実行
-            if isinstance(step_info, JobInfo):
-                # Job実行
-                output = step_info.run(
-                    variables   = variables,
-                    payload     = payload,
-                    outputs     = outputs,
-                )
-
-                # dump出力
-                dump_file:str = f"{dump_prefix_current}_{step_info.name}.json"
-                dump_writer.put(filename=dump_file, content=output)
-
-            elif isinstance(step_info, FlowEach):
-                # Each実行
-                output = step_info.run(
-                    dump_prefix = dump_prefix_current,
-                    dump_writer = dump_writer,
-                    variables   = variables,
-                    payload     = payload,
-                    outputs     = outputs,
-                )
+            # Component実行
+            output = step_info.run(
+                dump_prefix = dump_prefix_current,
+                dump_writer = dump_writer,
+                variables   = variables,
+                payload     = payload,
+                outputs     = outputs,
+            )
 
         return outputs
 

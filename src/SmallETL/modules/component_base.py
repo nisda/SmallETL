@@ -1,0 +1,243 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+from typing import final, List, Dict, Set, Any, Callable, Tuple
+from abc import ABC, abstractmethod
+import logging
+import importlib
+import re
+from datetime import datetime
+
+from .shared import evaluater
+
+if TYPE_CHECKING:
+    from .workflow import DumpWriter
+
+
+_NAME_SYMBOL = r'#$%@-_'
+_NAME_REGEX = [
+    {
+        "pattern" : re.compile(f"[\w{re.escape(_NAME_SYMBOL)}]*"),
+        "msg"     : f"`name` には半角英数字および一部の記号({_NAME_SYMBOL})のみ使用できます。",
+    }
+]
+
+logger = logging.getLogger(__name__)
+
+
+
+class ComponentBase(ABC):
+    """コンポーネント基底クラス"""
+
+    @property
+    def name(self) -> str:
+        return self.__name
+
+    @property
+    def description(self) -> str:
+        return self.__description
+
+    @property
+    def condition(self) -> str:
+        return self.__condition
+
+    @property
+    def parameters(self) -> Dict[str, Any]:
+        return self.__parameters
+
+    @property
+    def depends_on(self) -> Set[str]:
+        """依存Job"""
+        ret:List[str] = []
+        for prop in [self.__payload, self.__depends]:
+            if prop is None:
+                pass
+            elif isinstance(prop, list):
+                ret.extend(prop)
+            elif isinstance(prop, Dict):
+                ret.extend(list(prop.values()))
+            elif isinstance(prop, str):
+                ret.append(prop)
+        return set(ret)
+
+    @property
+    def status(self) -> str:
+        return self.__status
+
+
+    @property
+    def output(self) -> Any:
+        return self.__output
+
+    @property
+    def start_time(self) -> datetime:
+        return self.__start_time
+
+    @property
+    def end_time(self) -> datetime:
+        return self.__end_time
+
+    @final
+    def __init__(self, name:str, description:str, condition:str, parameters:Dict={}, depends:List=None):
+        logger.info(f"{self.__class__.__name__}.init: name={name}, description={description}, condition={condition}, parameters={parameters}, depends={depends}")
+
+        # name の命名チェック
+        for _reg_def in _NAME_REGEX:
+            _pattern = _reg_def["pattern"]
+            _msg = _reg_def["msg"]
+            if not re.fullmatch(_pattern, name):
+                raise ValueError(f"{_msg}")
+
+        # 設定
+        self.__name = name
+        self.__description = description
+        self.__condition = condition
+        self.__depends = depends
+        self.__parameters = parameters
+
+        # 実行情報
+        self.__start_time = None
+        self.__output = None
+        self.__end_time = None
+        self.__status   = 'initialized'
+
+
+
+    def __repr__(self) -> str:
+        return f"<{self.__name}: {self.__class__.__module__}.{self.__class__.__name__} object at {hex(id(self))}>"
+
+
+
+    def run(
+            self,
+            dump_prefix:str,
+            dump_writer:DumpWriter,
+            variables:Dict[str, Any],
+            payload:Dict[str, Any],
+            outputs:Dict[str, Any]
+        ) -> Any:
+        """タスク実行"""
+
+        # タスク名を生成
+        task_name:str = f"{dump_prefix}_{self.name}"
+
+        logger.info(f"[{task_name}] {self.__class__.__name__}.start: vars={variables}, payload.type:{type(payload).__name__}, payload.len:{len(payload)}")
+        self.__status   = 'running'
+
+
+        #------------------------
+        # mapping_data 生成
+        #------------------------
+        mapping = {
+            **variables,
+            "payload"   : payload,
+        }
+
+        #------------------------
+        # 実行条件判定（condition）
+        #------------------------
+
+        # condition が設定されていたら判定、未設定時はTrue
+        print("********************")
+        print(self.condition)
+        print(mapping)
+        print("********************")
+        condition_result:bool = evaluater.eval(self.condition, mapping=mapping) if self.condition else True
+        if not condition_result:
+            self.__status   = 'skipped'
+            self.__output   = self.__status
+
+            # dump出力
+            dump_file:str = f"{task_name}.skip.json"
+            dump_writer.put(filename=dump_file, content=self.__output)
+
+            # 終了
+            logger.info("[{}] skipped: output.type = <{}>, output.len = {}".format(
+                task_name,
+                type(self.__output).__name__,
+                len(self.__output) if hasattr(self.__output, '__len__') else None,
+            ))
+            return self.__output
+
+
+
+        #------------------------
+        # Taskパラメータ生成
+        #------------------------
+        params = evaluater.format(
+            self.__parameters,
+            mapping=mapping,
+        )
+
+
+        #------------------------
+        # 実行
+        #------------------------
+
+        # 開始時間を取得保持
+        self.__start_time == datetime.now()
+
+
+
+        # /// 実行 ///
+        if "JobInfo" in self.__class__.__name__:
+            # ジョブの場合
+            # 循環参照で JobInfo を参照できないため、クラス名で判定
+
+            # パラメータ調整
+            args:List = \
+                [params] if not isinstance(params, (Dict, List, Tuple)) else \
+                params if isinstance(params, (List, Tuple)) else []
+            kwargs:Dict = \
+                params if isinstance(params, (Dict)) else {}
+
+            logger.info(f"[{task_name}] run")
+            logger.debug(f"[{task_name}] params.args   = {args}")
+            logger.debug(f"[{task_name}] params.kwargs = {kwargs}")
+
+            self.__output = self._run(
+                task_name,
+                args=args,
+                kwargs=kwargs,
+            )
+        else:
+            # 制御コンポーネントの場合
+            self.__output = self._run(
+                task_name   = task_name,
+                dump_prefix = dump_prefix,
+                dump_writer = dump_writer,
+                variables   = variables,
+                payload     = payload,
+                outputs     = outputs,
+            )
+
+        # 終了時間を取得保持
+        self.__end_time == datetime.now()
+
+        # 出力結果をセット
+        outputs[self.name] = self.__output
+
+
+        #------------------------
+        # dump出力
+        #------------------------
+        dump_file:str = f"{task_name}.json"
+        dump_writer.put(filename=dump_file, content=self.__output)
+
+
+        #------------------------
+        # 終了
+        #------------------------
+        logger.info("[{}] succeeded: output.type = <{}>, output.len = {}".format(
+            task_name,
+            type(self.__output).__name__,
+            len(self.__output) if hasattr(self.__output, '__len__') else None,
+        ))
+
+        self.__status   = 'succeeded'
+        return self.__output
+
+
+    @abstractmethod
+    def _run(self, *args, **kwargs):
+        ...

@@ -1,5 +1,5 @@
 {
-    "name": "sample-010",
+    "name": "sample-100-practical",
     "dump_dir" : "{var.work_dir}/dump/{wf.name}/{wf.start_time:%Y%m%d%H%M%S%f}_{wf.run_id}",
     "graph": [
         {
