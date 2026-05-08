@@ -1,0 +1,31 @@
+{
+    "name": "sample-007-safe-funcs",
+    "dump_dir" : "{var.work_dir}/dump/{wf.name}/",
+    "graph": [
+        {
+            "name": "pass_01",
+            "job": "flow.Pass",
+            "parameters" : [
+                {"id": 1, "name": "A"},
+                {"id": 2, "name": "B"},
+                {"id": 3, "name": "C"}
+            ]
+        },
+        {
+            "name": "pass_02",
+            "job": "flow.Pass",
+            "condition" : "max(10, 20, 30) < abs(-100)",
+            "parameters" : {
+                "len"       : "{len(payload.pass_01)}",
+                "type"      : "{type(payload.pass_01[0])}",
+                "round"     : "{round(123.456, 0)}",
+                "floor"     : "{floor(123.456, 2)}",
+                "ceil"      : "{ceil(123.456, 2)}",
+                "lookup1"   : "{lookup(payload.pass_01, 'id', 2, 'name')}",
+                "lookup2"   : "{lookup(payload.pass_01, 'id', 0, 'name')}",
+                "lookup3"   : "{lookup(payload.pass_01, 'id', 0, 'name', '-Unknown-')}",
+                "lookup4"   : "{lookup(payload.pass_01, 'id', 3)}"
+            }
+        }
+    ]
+}
