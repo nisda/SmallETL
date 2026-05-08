@@ -21,8 +21,8 @@
             ]
         },
         {
-            "name": "pass_03",
-            "job": "flow.Pass",
+            "name": "custom_echo_01",
+            "job": "custom.sample.echo",
             "parameters" : "{payload.pass_02[0]}"
         }
     ]
