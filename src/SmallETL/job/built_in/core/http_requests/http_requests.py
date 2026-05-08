@@ -87,12 +87,13 @@ class Response:
             # self._reason = res.reason
             # self._msg = res.msg
             self._content = res.read()
+            self._ex = ex
         if ex is not None:
             self._headers = [list(x) for x in ex.headers.items()]
-            self._status = ex.code,
+            self._status = ex.code
             # self._reason = ex.reason,
             # self._msg = ex.msg,
-            self._content = ex.read(),
+            self._content = ex.read()
             self._ex = ex
 
     @property
