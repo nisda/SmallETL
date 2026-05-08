@@ -7,6 +7,7 @@ import logging
 import importlib
 import re
 from datetime import datetime
+from enum import StrEnum, auto
 
 from .shared import evaluater
 
@@ -22,7 +23,18 @@ _NAME_REGEX = [
     }
 ]
 
+_STOP_MSG_DEFAULT = "*** Task was stopped due to `stop_condition`."
+
+
 logger = logging.getLogger(__name__)
+
+
+class ComponentStatus(StrEnum):
+    Initialized = auto()
+    Running = auto()
+    Succeeded = auto()
+    Stopped = auto()
+    Skipped = auto()
 
 
 
@@ -61,9 +73,16 @@ class ComponentBase(ABC):
         return set(ret)
 
     @property
-    def status(self) -> str:
-        return self.__status
+    def stop_condition(self) -> str:
+        return self.__stop_condition
 
+    @property
+    def stop_message(self) -> str:
+        return self.__stop_message
+
+    @property
+    def status(self) -> ComponentStatus:
+        return self.__status
 
     @property
     def output(self) -> Any:
@@ -78,8 +97,29 @@ class ComponentBase(ABC):
         return self.__end_time
 
     @final
-    def __init__(self, name:str, description:str, condition:str, parameters:Dict={}, depends:List=None):
-        logger.info(f"{self.__class__.__name__}.init: name={name}, description={description}, condition={condition}, parameters={parameters}, depends={depends}")
+    def __init__(
+        self,
+        name:str,
+        description:str,
+        depends:List,
+        condition:str,
+        parameters:Dict,
+        stop_condition:str,
+        stop_message:str,
+    ):
+
+        logger.info(
+            f"{self.__class__.__name__}.init: " +
+            ", ".join([
+                f"name={name}",
+                f"description={description}",
+                f"condition={condition}",
+                f"parameters={parameters}",
+                f"depends={depends}",
+                f"stop_condition={stop_condition}",
+                f"stop_message={stop_message}",
+            ])
+        )
 
         # name の命名チェック
         for _reg_def in _NAME_REGEX:
@@ -94,18 +134,19 @@ class ComponentBase(ABC):
         self.__condition = condition
         self.__depends = depends
         self.__parameters = parameters
+        self.__stop_condition = stop_condition
+        self.__stop_message = stop_message
 
         # 実行情報
         self.__start_time = None
         self.__output = None
         self.__end_time = None
-        self.__status   = 'initialized'
+        self.__status   = ComponentStatus.Initialized
 
 
 
     def __repr__(self) -> str:
         return f"<{self.__name}: {self.__class__.__module__}.{self.__class__.__name__} object at {hex(id(self))}>"
-
 
 
     def run(
@@ -115,14 +156,14 @@ class ComponentBase(ABC):
             variables:Dict[str, Any],
             payload:Dict[str, Any],
             outputs:Dict[str, Any]
-        ) -> Any:
+        ) -> ComponentStatus:
         """タスク実行"""
 
         # タスク名を生成
         task_name:str = f"{dump_prefix}_{self.name}"
 
         logger.info(f"[{task_name}] {self.__class__.__name__}.start: vars={variables}, payload.type:{type(payload).__name__}, payload.len:{len(payload)}")
-        self.__status   = 'running'
+        self.__status   = ComponentStatus.Running
 
 
         #------------------------
@@ -140,8 +181,8 @@ class ComponentBase(ABC):
         # condition が設定されていたら判定、未設定時はTrue
         condition_result:bool = evaluater.eval(self.condition, mapping=mapping) if self.condition else True
         if not condition_result:
-            self.__status   = 'skipped'
-            self.__output   = self.__status
+            self.__status   = ComponentStatus.Skipped
+            self.__output   = ComponentStatus.Skipped
 
             # dump出力
             dump_file:str = f"{task_name}.skip.json"
@@ -153,8 +194,7 @@ class ComponentBase(ABC):
                 type(self.__output).__name__,
                 len(self.__output) if hasattr(self.__output, '__len__') else None,
             ))
-            return self.__output
-
+            return ComponentStatus.Skipped
 
 
         #------------------------
@@ -174,8 +214,7 @@ class ComponentBase(ABC):
         self.__start_time == datetime.now()
 
 
-
-        # /// 実行 ///
+        # /// タスク実行 ///
         if "JobInfo" in self.__class__.__name__:
             # ジョブの場合
             # 循環参照で JobInfo を参照できないため、クラス名で判定
@@ -196,9 +235,11 @@ class ComponentBase(ABC):
                 args=args,
                 kwargs=kwargs,
             )
+
         else:
+
             # 制御コンポーネントの場合
-            self.__output = self._run(
+            flow_output:Dict = self._run(
                 task_name   = task_name,
                 dump_prefix = dump_prefix,
                 dump_writer = dump_writer,
@@ -206,6 +247,8 @@ class ComponentBase(ABC):
                 payload     = payload,
                 outputs     = outputs,
             )
+            self.__status = flow_output["status"]
+            self.__output = flow_output["output"]
 
         # 終了時間を取得保持
         self.__end_time == datetime.now()
@@ -222,6 +265,45 @@ class ComponentBase(ABC):
 
 
         #------------------------
+        # 中止判定（子タスク実行結果）
+        #------------------------
+
+        if self.status == ComponentStatus.Stopped:
+            # メッセージ表示
+            logger.info("[{}] stopped: output.type = <{}>, output.len = {}".format(
+                task_name,
+                type(self.__output).__name__,
+                len(self.__output) if hasattr(self.__output, '__len__') else None,
+            ))
+            return self.status
+
+
+        #------------------------
+        # 中止判定（stop_condition）
+        #------------------------
+        mapping = {
+            **mapping,
+            "output" : self.__output,
+        }
+
+        # condition が設定されていたら判定、未設定時は False
+        is_stop:bool = evaluater.eval(self.stop_condition, mapping=mapping) if self.stop_condition else False
+        if is_stop:
+
+            # メッセージ表示
+            stop_msg = self.stop_message or _STOP_MSG_DEFAULT
+            logger.info(f"[{task_name}] stopped: {stop_msg}")
+            logger.info("[{}] stopped: output.type = <{}>, output.len = {}".format(
+                task_name,
+                type(self.__output).__name__,
+                len(self.__output) if hasattr(self.__output, '__len__') else None,
+            ))
+
+            self.__status   = ComponentStatus.Stopped
+            return ComponentStatus.Stopped
+
+
+        #------------------------
         # 終了
         #------------------------
         logger.info("[{}] succeeded: output.type = <{}>, output.len = {}".format(
@@ -230,8 +312,8 @@ class ComponentBase(ABC):
             len(self.__output) if hasattr(self.__output, '__len__') else None,
         ))
 
-        self.__status   = 'succeeded'
-        return self.__output
+        self.__status   = ComponentStatus.Succeeded
+        return ComponentStatus.Succeeded
 
 
     @abstractmethod

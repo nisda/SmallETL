@@ -1,0 +1,50 @@
+{
+    "name": "sample-006-stop",
+    "const" : {
+        "stop_task": "pass_02"  // ここを変えれば、そこで中止される。
+    },
+    "dump_dir" : "{var.work_dir}/dump/{wf.name}/",
+    "graph": [
+        {
+            "name": "pass_01",
+            "job": "flow.Pass",
+            "parameters" : {
+                "aaa" : "AAA"
+            },
+            "stop_condition": "const.stop_task == 'pass_01'",
+            "stop_message"  : "const 指定により停止されました。"
+        },
+        {
+            "name": "each_01",
+            "flow": "each",
+            "items": {"x": "XXX", "y": "YYY"},
+            "graph" : [
+                {
+                    "name": "each_pass_01",
+                    "job": "flow.Pass",
+                    "parameters" : {
+                        "each" : "{each.index} | {each.key} | {each.value}"
+                    },
+                    "stop_condition": "const.stop_task == 'each_pass_01'"
+                },
+                {
+                    "name": "each_pass_02",
+                    "job": "flow.Pass",
+                    "parameters" : [
+                        "{each.index} | {each.key} | {each.value}"
+                    ],
+                    "stop_condition": "const.stop_task == 'each_pass_02'"
+                }
+            ]
+        },
+        {
+            "name": "pass_02",
+            "job": "flow.Pass",
+            "parameters" : {
+                "bbb" : "BBB"
+            },
+            "stop_condition": "const.stop_task == 'pass_02'",
+            "stop_message"  : "const 指定により停止されました。"
+        }
+    ]
+}

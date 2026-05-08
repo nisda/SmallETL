@@ -33,27 +33,35 @@ class JobInfo(ComponentBase):
 
 
     @final
-    def __init__(self, name:str, job:str, parameters:Dict={}, depends:List=None, description:str=None, condition:str=None):
-        super().__init__(name=name, description=description, condition=condition, parameters=parameters, depends=depends)
+    def __init__(
+        self,
+        job:str,
+        # 以下、共通パラメータ
+        name:str,
+        description:str=None,
+        depends:List=None,
+        condition:str=None,
+        parameters:Dict={},
+        stop_condition:str=None,
+        stop_message:str=None,
+    ):
+        super().__init__(
+            name            = name,
+            description     = description,
+            depends         = depends,
+            condition       = condition,
+            parameters      = parameters,
+            stop_condition = stop_condition,
+            stop_message   = stop_message,
+        )
+        # -- ここまで共通処理
+        # -- 以下、クラス独自処理
+
         logger.info(f"{self.__class__.__name__}.init: job={job}")
 
         # 設定
         self.__job_path = job
         self.__job_func = self.__load_job(job_path=job)
-
-
-    def _run(
-            self,
-            task_name:str,              # 不使用
-            args:List[Any],
-            kwargs:Dict[str, Any],
-        ) -> Any:
-
-        return self.__job_func(
-            *args,
-            **kwargs,
-        )
-
 
 
     def __load_job(self, job_path:str) -> Callable:
@@ -80,9 +88,9 @@ class JobInfo(ComponentBase):
         else:
             module_path_buildin:str = f"..job.built_in.{module_path}"
 
-        logger.critical(f"package : {package_path}")
-        logger.critical(f"buildin : {module_path_buildin}")
-        logger.critical(f"module  : {module_name}")
+        logger.debug(f"package : {package_path}")
+        logger.debug(f"buildin : {module_path_buildin}")
+        logger.debug(f"module  : {module_name}")
 
 
         # job-module を読み込み
@@ -92,4 +100,17 @@ class JobInfo(ComponentBase):
         # function 返却
         logger.debug(f"load_job.succeed: {job_func.__name__}")
         return job_func
+
+
+    def _run(
+            self,
+            task_name:str,
+            args:List[Any],
+            kwargs:Dict[str, Any],
+        ) -> Any:
+
+        return self.__job_func(
+            *args,
+            **kwargs,
+        )
 

@@ -8,7 +8,7 @@ from datetime import datetime
 from collections import defaultdict
 from .shared import evaluater
 
-from .component_base import ComponentBase
+from .component_base import ComponentBase, ComponentStatus
 
 if TYPE_CHECKING:
     from .workflow import DumpWriter
@@ -37,10 +37,31 @@ class FlowEach(ComponentBase):
 
 
     @final
-    def __init__(self, name:str, items:Any, graph:List[Dict], description:str=None, condition:str=None, parameters:Dict={}, depends:List=None):
-        super().__init__(name=name, description=description, condition=condition, parameters=parameters, depends=depends)
+    def __init__(
+        self,
+        items:Any,
+        graph:List[Dict],
+        # 以下、共通パラメータ
+        name:str,
+        description:str=None,
+        depends:List=None,
+        condition:str=None,
+        parameters:Dict={},
+        stop_condition:str=None,
+        stop_message:str=None,
+    ):
+        super().__init__(
+            name            = name,
+            description     = description,
+            depends         = depends,
+            condition       = condition,
+            parameters      = parameters,
+            stop_condition = stop_condition,
+            stop_message   = stop_message,
+        )
+        # -- ここまで共通処理
+        # -- 以下、クラス独自処理
 
-        # 以下、クラス独自処理
         logger.info(f"{self.__class__.__name__}.init: items={items}, graph(len)={len(graph)}")
 
         # 循環参照を回避するためここでimport
@@ -94,6 +115,7 @@ class FlowEach(ComponentBase):
         #------------------------
 
         # ループ実行
+        status:ComponentStatus = ComponentStatus.Running
         outputs[self.name] = defaultdict(dict)
         for i, item in enumerate(items):
 
@@ -118,15 +140,25 @@ class FlowEach(ComponentBase):
                 outputs     = outputs[self.name][key],
             )
 
+            if self.graph.status == ComponentStatus.Stopped:
+                status = self.graph.status
+                break
+        else:
+            status = ComponentStatus.Succeeded
+
 
         #------------------------
         # 終了
         #------------------------
-        logger.info("Flow-each.{}.succeeded: output.type={}, output.length={}".format(
+        logger.info("Flow-each.{}.{}: output.type={}, output.length={}".format(
             self.name,
+            status,
             type(self.__output).__name__,
             len(self.__output) if hasattr(self.__output, '__len__') else None,
         ))
-        return outputs[self.name]
+        return {
+            "output" : outputs[self.name],
+            "status" : status,
+        }
 
 
