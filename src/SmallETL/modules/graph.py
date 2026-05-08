@@ -71,10 +71,6 @@ class GraphInfo():
                 outputs     = outputs,
             )
 
-            print("------------------")
-            print(self.__status)
-            print(self.status)
-            print("------------------")
 
             # Stopped のときはその時点で終了
             if self.status == ComponentStatus.Stopped:

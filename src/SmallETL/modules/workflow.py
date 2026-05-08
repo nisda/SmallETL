@@ -144,6 +144,7 @@ class WorkFlow():
                 "run_id" : run_id,
                 "start_time" : start_time,
             },
+            "env" : os.environ.copy(),
         }
         variables = {
             **variables,

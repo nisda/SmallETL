@@ -8,7 +8,9 @@
             "parameters" : {
                 "dummy_1" : "DUMMY1",
                 "dummy_2" : "DUMMY2",
-                "now" : "{wf.start_time:%Y-%m-%d %H:%M:%S.%f}"
+                "now" : "{wf.start_time:%Y-%m-%d %H:%M:%S.%f}",
+                "env/user"           : "{env.USER}",
+                "env/python_version" : "{env.PYTHON_VERSION}"
             }
         },
         {
