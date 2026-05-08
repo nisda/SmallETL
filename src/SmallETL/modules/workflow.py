@@ -1,6 +1,6 @@
 # coding: utf-8
 
-from typing import Dict, Any, overload
+from typing import Dict, Any, overload, List, Iterable
 import logging
 from pathlib import Path
 from datetime import datetime
@@ -9,6 +9,7 @@ from pathlib import Path
 import os
 import glob
 import shutil
+import math
 
 from .const import ExitCode
 from .graph import GraphInfo
@@ -19,6 +20,42 @@ from ..libs.json_ex import JsonEx
 # 設定
 
 logger = logging.getLogger(__name__)
+
+class LoggerMaskFilter(logging.Filter):
+    def __init__(self, secret_words:Iterable[str]):
+        # 変換テーブルを生成して保存
+        self.__secret_words = {
+            v: self.__mask(v)
+            for v in secret_words
+        }
+
+    @classmethod
+    def __mask(cls, text:str) -> str:
+        # 8文字までは全文字をマスクかつ8桁固定
+        if len(text) <= 8:
+            return "*" * 8
+
+        # それ以上の場合は、文字数の15%または3文字の少ないほうを上限として
+        # 先頭のみオープン。文字数は30文字を上限にする。
+        gen_len:int = min(math.floor(len(text)*0.15), 3)
+        max_len:int = min(len(text), 30)
+        ret = (text[0:gen_len] + ("*" * max_len))[:max_len]
+        return ret
+
+    def filter(self, record):
+        # マスク前のメッセージを取得
+        original_message = record.getMessage()
+        
+        # マスク処理
+        masked_message = original_message
+        for old, new in self.__secret_words.items():
+            masked_message = masked_message.replace(old, new)
+
+        # メッセージ書き換え
+        record.msg = masked_message
+        record.args = ()
+        
+        return True
 
 
 class DumpWriter():
@@ -78,6 +115,10 @@ class WorkFlow():
         return self.__description
 
     @property
+    def secret(self) -> Dict[str, Any]:
+        return self.__secret
+
+    @property
     def const(self) -> Dict[str, Any]:
         return self.__const
 
@@ -120,6 +161,7 @@ class WorkFlow():
         # 情報読み込み
         self.__name:str             = workflow_def["name"]
         self.__description:str      = workflow_def.get("description", None)
+        self.__secret:Dict[str, Any] = workflow_def.get("secret", None) or {}
         self.__const:Dict[str, Any] = workflow_def.get("const", None) or {}
         self.__dump_dir:str         = workflow_def.get("dump_dir", None)
         self.__graph:GraphInfo      = GraphInfo(workflow_def["graph"])
@@ -136,28 +178,60 @@ class WorkFlow():
         logger.info(f"[{run_id}] Run Workflow `{self.name}`")
         start_time:datetime = datetime.now()
 
+        #------------------------------
         # 変数の生成
+        #------------------------------
+
+        # 基底: var, env
         variables:Dict[str, Any] = {
             "var" : var,
+            "env" : os.environ.copy(),
+        }
+
+        # secret: ver, env 使用可
+        secret_vars:Dict[str, Any] = \
+            evaluater.format(self.secret, mapping=variables)
+
+        # const: var, env, wf, secret 使用可
+        variables = {
+            **variables,
+            "secret" : secret_vars,
             "wf"    : {
                 "name" : self.name,
                 "run_id" : run_id,
                 "start_time" : start_time,
             },
-            "env" : os.environ.copy(),
         }
+        const_vars:Dict[str, Any] = \
+            evaluater.format(self.const, mapping=variables)
+
+        # const以降の変数
         variables = {
             **variables,
-            "const": evaluater.format(self.const, mapping=variables),
+            "const": const_vars,
         }
 
+        # ルートlogger にマスク処理を設定
+        logger_filter = LoggerMaskFilter(secret_vars.values())
+        root_logger = logging.getLogger()
+        for handler in root_logger.handlers:
+            handler.addFilter(logger_filter)
 
+        # 変数をログ出力
+        logger.info(f"variables: {variables}")
+
+
+        #------------------------------
         # dump ディレクトリ作成
+        #------------------------------
         dump_dir_str = evaluater.format(self.dump_dir, mapping=variables, recursive=False) if self.dump_dir else None
         dump_writer = DumpWriter(dir=dump_dir_str)
         logger.debug(f"dump_dir: {dump_writer.dir}")
 
 
+        #------------------------------
+        # root-graph 実行
+        #------------------------------
         try:
             # payload/outputs 初期化
             outputs:Dict[str, Any] = {}

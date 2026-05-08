@@ -162,7 +162,7 @@ class ComponentBase(ABC):
         # タスク名を生成
         task_name:str = f"{dump_prefix}_{self.name}"
 
-        logger.info(f"[{task_name}] {self.__class__.__name__}.start: vars={variables}, payload.type:{type(payload).__name__}, payload.len:{len(payload)}")
+        logger.info(f"[{task_name}] {self.__class__.__name__}.start: payload.type:{type(payload).__name__}, payload.len:{len(payload)}")
         self.__status   = ComponentStatus.Running
 
 

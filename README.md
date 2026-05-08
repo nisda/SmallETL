@@ -12,22 +12,29 @@ python ./workflow/sample_01.json --log-level DEBUG
 | -- | -- |-- |
 | name | str | - |
 | description | str | - |
-| const | dict | `var` `wf` |
-| dump_dir | str | `var` `wf` `const` |
-| graph | list | `var` `wf` `const` `payload`  |
-| graph<BR> (inside each) | list | `var` `wf` `const` `payload` `each` `each.parent`  |
+| secret | dict | `var` `env` |
+| const | dict | `var` `env` `wf` `secret` |
+| dump_dir | str | `var` `env` `wf` `secret` `const` |
+| graph | list | `var` `env` `wf` `secret` `const` `payload`  |
+| graph<BR> (inside each) | list | `var` `env`  `wf` `secret` `const` `payload` `each` `each.parent`  |
 
 ### 変数
 
 #### var
 | 変数 | 備考 |
 | -- | -- |
-| `{var.xxx}` | `workflow.run` 実行時にパラメータ `var` で指定する。 |
+| `{var.xxx}` | `workflow.run` 実行時にパラメータ `var` で指定した値。 |
+
+
+#### secret
+| 変数 | 備考 |
+| -- | -- |
+| `{secret.xxx}` | workflow 定義の "secret" で設定した値。 |
 
 #### wf
 | 変数 | 備考 |
 | -- | -- |
-| `{wf.name}` | workflow.name で設定した workflow 名 |
+| `{wf.name}` | workflow 定義の "name" で設定した値。 |
 | `{wf.run_id}` | workflow 実行ID（8桁の英数字） |
 | `{wf.start_time}` | workflow 実行開始時日時。 |
 
@@ -35,7 +42,7 @@ python ./workflow/sample_01.json --log-level DEBUG
 
 | 変数 | 備考 |
 | -- | -- |
-| `{const.xxx}` | workflow.const で設定した定数。 |
+| `{const.xxx}` | workflow 定義の "const" で設定した値。 |
 
 #### payload
 
@@ -45,10 +52,12 @@ python ./workflow/sample_01.json --log-level DEBUG
 
 #### each
 
+`"flow": "each"` 内の繰り返し要素。
+
 | 変数 | 備考 |
 | -- | -- |
 | `{each.index}` | 繰り返し要素の連番 |
-| `{each.key}`   | 繰り返し要素のキー（Dictの場合のみ） |
+| `{each.key}`   | 繰り返し要素のキー（listのときはindexと同値） |
 | `{each.value}` | 繰り返し要素の値 |
 
 #### each.parent
@@ -65,7 +74,7 @@ python ./workflow/sample_01.json --log-level DEBUG
 
 
 
-## 開発メモ
+# 開発メモ
 
 
 ### 構成要素（用語の定義）
@@ -79,7 +88,24 @@ workflow
         └ ...
 ```
 
+| class		| 基底			| output
+| --		| --			|
+| workflow	| -				|
+| graph		| -				|
+| ComponentBase
+|   job		| ComponentBase	| 
+|   each		| ComponentBase	|
 
+graph				status 
+ComponentBase		output を保存する。
+	job				output を↑に戻す
+	each			output を↑に戻す。
+						中止をどうやって上に渡すか？ ⇒ componentBase にメソッド用意する？
+						フロー制御の場合は戻り値を dict にして status と output をまとめて dict にして渡す？
+						本来は FlowCompornent とか継承クラスを挟んだほうがいいんだろうけど、そこまでは面倒。
+
+graph も Component を継承できないか？
+	⇒ Condition とか無いのでNG。
 
 #### each の書き方
 {
@@ -93,4 +119,43 @@ workflow
 	]
 }
 
+
+
+## 課題
+
+* 終了コード
+	const の ExitCode と
+	ComponentBase の ComponentStatus に分かれてしまっている。
+	途中の Stopped 等を Workflow.run でキャッチできていない。正常終了扱いになっている。
+
+
+* payload という文言
+	output のほうがわかりやすそう。
+		⇒内部処理に色々影響ありそうなので要注意。
+			⇒後回し
+
+
+* テーブルから特定条件の特定の値をgetするには？
+	行指向だと難しそう。
+	filter -> payload.name[0] で取れるけども、それのためのワンステップが面倒だよね。
+	table に output_format を追加したので、列指向 (cols,dict) を指定すると取りやすい。ワンステップ必要なのは変わらない。
+
+* フロー制御で条件分岐したい。
+	if ではなく switch があれば足りそう。
+	```json
+	{
+		"flow" : "switch",
+		"case" : {
+			"<条件文1>" : {},
+			"<条件文2>" : {},
+		},
+		"else" : {	//default のほうが一般的か。
+			...
+		}
+	}
+	```
+
+* ジョブ結果をキャッシュする仕組みを用意したい。
+	更新頻度が低いマスタデータ取得などの用途で。
+	カスタムジョブへの反映を考慮して、ジョブ個別で実装するのではなくデコレータなどで用意したい。
 

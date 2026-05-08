@@ -82,7 +82,7 @@ class FlowEach(ComponentBase):
             payload:Dict[str, Any],
             outputs:Dict[str, Any]
         ) -> Any:
-        logger.info(f"each.{self.name}.run: vars={variables}, payload.type:{type(payload).__name__}, payload.len:{len(payload)}")
+        logger.info(f"each.{self.name}.run: payload.type:{type(payload).__name__}, payload.len:{len(payload)}")
 
 
         #------------------------

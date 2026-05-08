@@ -8,14 +8,15 @@ from typing import Dict, List, Any
 import json
 
 
-# src フォルダをインポート
-sys.path.append('../src/')
+# src フォルダをインポート（上位フォルダ経由のため必要）
+SCRIPT_DIR = os.path.dirname(__file__)
+sys.path.append(os.path.join(SCRIPT_DIR, '../src/'))
 from SmallETL import WorkFlow
 
 
 # 設定
 DEFAULT_LOG_LEVEL :str = "DEBUG"
-WORK_DIR :str = os.path.join(os.path.dirname(__file__), '_sample')
+WORK_DIR :str = os.path.join(SCRIPT_DIR, '_sample')
 
 
 

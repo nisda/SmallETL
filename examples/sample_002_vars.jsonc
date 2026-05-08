@@ -1,0 +1,29 @@
+{
+    "name": "sample-002-vars",
+    "description" : "",
+    "secret" : {
+        "apikey"        : "abcdefghijk",          // {var.*} {env.*} の使用を推奨。
+        "python_path"   : "{env.PYTHON_PATH}"     // これは本来 secret にする必要はないが、あくまでSampleとして。
+    },
+    "const" : {
+        "apikey_con" : "隠される -> {secret.apikey} <- 隠される",
+        "skip_flag"  : 1
+    },
+    "dump_dir" : "{var.work_dir}/dump/{wf.name}/",
+    "graph": [
+        {
+            "name": "pass_01",
+            "job": "flow.Pass",
+            "parameters" : {
+                //  dump出力では隠せない
+                "text" : "DUMMY1",
+                "secret/apikey"         : "{secret.apikey}",
+                "secret/python_path"    : "{secret.python_path}",
+                "const/apikey_con"      : "{const.apikey_con}",
+                "const/skip_flag"       : "{const.skip_flag}",
+                "env/python_path"       : "{env.PYTHON_PATH}",
+                "env/python_version"    : "{env.PYTHON_VERSION}"
+            }
+        }
+    ]
+}

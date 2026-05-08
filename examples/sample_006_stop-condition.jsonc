@@ -1,7 +1,7 @@
 {
     "name": "sample-006-stop",
     "const" : {
-        "stop_task": "pass_02"  // ここを変えれば、そこで中止される。
+        "stop_task": "pass_02"  // 各タスクの stop_condition で判定。ここを変えれば、そこで中止される。
     },
     "dump_dir" : "{var.work_dir}/dump/{wf.name}/",
     "graph": [
@@ -12,7 +12,7 @@
                 "aaa" : "AAA"
             },
             "stop_condition": "const.stop_task == 'pass_01'",
-            "stop_message"  : "const 指定により停止されました。"
+            "stop_message"  : "*** const 指定により停止されました。"
         },
         {
             "name": "each_01",
@@ -44,7 +44,7 @@
                 "bbb" : "BBB"
             },
             "stop_condition": "const.stop_task == 'pass_02'",
-            "stop_message"  : "const 指定により停止されました。"
+            "stop_message"  : "*** const 指定により停止されました。"
         }
     ]
 }
