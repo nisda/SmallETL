@@ -74,7 +74,11 @@ class JobInfo(ComponentBase):
         parts:List[str] = job_path.split(".")
         module_path:str = ".".join(parts[0:-1])
         module_name:str = parts[-1]
-        module_path_buildin:str = f"..job.built_in.{module_path}"
+
+        if module_path.startswith("custom."):
+            module_path_buildin:str = f"..job.{module_path}"
+        else:
+            module_path_buildin:str = f"..job.built_in.{module_path}"
 
         logger.critical(f"package : {package_path}")
         logger.critical(f"buildin : {module_path_buildin}")

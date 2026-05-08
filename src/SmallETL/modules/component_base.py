@@ -138,10 +138,6 @@ class ComponentBase(ABC):
         #------------------------
 
         # condition が設定されていたら判定、未設定時はTrue
-        print("********************")
-        print(self.condition)
-        print(mapping)
-        print("********************")
         condition_result:bool = evaluater.eval(self.condition, mapping=mapping) if self.condition else True
         if not condition_result:
             self.__status   = 'skipped'
