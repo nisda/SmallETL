@@ -1,0 +1,47 @@
+{
+    "name": "sample-005-table",
+    "dump_dir" : "{var.work_dir}/dump/{wf.name}/",
+    "graph": [
+        {
+            "name": "sample_table",
+            "job": "flow.Pass",
+            "parameters" : {
+                "id": [1, 2, 3, 4, 5],
+                "name" : ["Alice", "Bob", "Cris", "Devid", "Ema"],
+                "age" : [22, 35, null, 18]
+            }
+        },
+        {
+            "name": "table_format_1",
+            "job": "table.nop",
+            "parameters" : {
+                "data" : "{payload.sample_table}",
+                "output_format" : "dict,rows"
+            }
+        },
+        {
+            "name": "table_format_2",
+            "job": "table.nop",
+            "parameters" : {
+                "data" : "{payload.sample_table}",
+                "output_format" : "list,cols"
+            }
+        },
+        {
+            "name": "table_format_3",
+            "job": "table.nop",
+            "parameters" : {
+                "data" : "{payload.sample_table}",
+                "output_format" : "dict,cols"
+            }
+        },
+        {
+            "name": "table_format_4",
+            "job": "table.nop",
+            "parameters" : {
+                "data" : "{payload.sample_table}",
+                "output_format" : "list,rows"
+            }
+        }
+    ]
+}
