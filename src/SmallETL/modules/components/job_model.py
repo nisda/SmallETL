@@ -5,25 +5,19 @@ from typing import final, List, Dict, Set, Any, Callable, Tuple
 import logging
 import importlib
 import re
-from .component_base import ComponentBase
+from .base_model import ComponentBase
+from .result_info import TaskResultInfo, TaskStatus
 
 if TYPE_CHECKING:
-    from .workflow import DumpWriter
+    from ..workflow import DumpWriter
 
 
-_NAME_SYMBOL = r'#$%@-_'
-_NAME_REGEX = [
-    {
-        "pattern" : re.compile(f"[\w{re.escape(_NAME_SYMBOL)}]*"),
-        "msg"     : f"`name` には半角英数字および一部記号({_NAME_SYMBOL})のみ使用できます。",
-    }
-]
 
 logger = logging.getLogger(__name__)
 
 
 
-class JobInfo(ComponentBase):
+class JobModel(ComponentBase):
     """Job情報クラス"""
 
 
@@ -32,31 +26,10 @@ class JobInfo(ComponentBase):
         return self.__job_path
 
 
-    @final
     def __init__(
         self,
         job:str,
-        # 以下、共通パラメータ
-        name:str,
-        description:str=None,
-        depends:List=None,
-        condition:str=None,
-        parameters:Dict={},
-        stop_condition:str=None,
-        stop_message:str=None,
     ):
-        super().__init__(
-            name            = name,
-            description     = description,
-            depends         = depends,
-            condition       = condition,
-            parameters      = parameters,
-            stop_condition = stop_condition,
-            stop_message   = stop_message,
-        )
-        # -- ここまで共通処理
-        # -- 以下、クラス独自処理
-
         logger.info(f"{self.__class__.__name__}.init: job={job}")
 
         # 設定
@@ -84,9 +57,9 @@ class JobInfo(ComponentBase):
         module_name:str = parts[-1]
 
         if module_path.startswith("custom."):
-            module_path_buildin:str = f"..job.{module_path}"
+            module_path_buildin:str = f"...job.{module_path}"
         else:
-            module_path_buildin:str = f"..job.built_in.{module_path}"
+            module_path_buildin:str = f"...job.built_in.{module_path}"
 
         logger.debug(f"package : {package_path}")
         logger.debug(f"buildin : {module_path_buildin}")
@@ -107,10 +80,15 @@ class JobInfo(ComponentBase):
             task_name:str,
             args:List[Any],
             kwargs:Dict[str, Any],
-        ) -> Any:
+        ) -> TaskResultInfo:
 
-        return self.__job_func(
+        output:Any = self.__job_func(
             *args,
             **kwargs,
+        )
+
+        return TaskResultInfo(
+            status=TaskStatus.Succeeded,
+            output=output,
         )
 

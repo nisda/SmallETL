@@ -74,7 +74,6 @@
             }
         },
         {
-            "depends" : ["sleep_01"],
             "name": "pass_02",
             "job": "flow.Pass"
         }

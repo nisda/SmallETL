@@ -11,9 +11,9 @@ import glob
 import shutil
 import math
 
-from .const import ExitCode
-from .graph import GraphInfo
-from .shared import evaluater
+from enum import IntEnum
+from .components.graph_model import GraphModel
+from .common.shared import evaluater
 from ..libs.json_ex import JsonEx
 
 
@@ -104,6 +104,16 @@ class DumpWriter():
 
 
 
+#---------------------------------------
+#   終了コード
+#---------------------------------------
+class ExitCode(IntEnum):
+    Succeeded = 0
+    Aborted = 1
+
+
+
+
 class WorkFlow():
 
     @property
@@ -127,7 +137,7 @@ class WorkFlow():
         return self.__dump_dir
 
     @property
-    def graph(self) -> GraphInfo:
+    def graph(self) -> GraphModel:
         return self.__graph
 
 
@@ -164,7 +174,7 @@ class WorkFlow():
         self.__secret:Dict[str, Any] = workflow_def.get("secret", None) or {}
         self.__const:Dict[str, Any] = workflow_def.get("const", None) or {}
         self.__dump_dir:str         = workflow_def.get("dump_dir", None)
-        self.__graph:GraphInfo      = GraphInfo(workflow_def["graph"])
+        self.__graph:GraphModel     = GraphModel(workflow_def["graph"])
 
         # 終了
         return
@@ -174,7 +184,7 @@ class WorkFlow():
         '''実行ワークフロー実行'''
 
         # run_id 生成
-        run_id = str(uuid.uuid4())[0:8]
+        run_id = str(uuid.uuid4()).replace('-', '')[0:8]
         logger.info(f"[{run_id}] Run Workflow `{self.name}`")
         start_time:datetime = datetime.now()
 

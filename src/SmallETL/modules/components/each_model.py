@@ -6,13 +6,14 @@ import logging
 import re
 from datetime import datetime
 from collections import defaultdict
-from .shared import evaluater
+from ..common.shared import evaluater
 
-from .component_base import ComponentBase, ComponentStatus
+from .base_model import ComponentBase
+from .result_info import TaskResultInfo, TaskStatus
 
 if TYPE_CHECKING:
-    from .workflow import DumpWriter
-    from .graph import GraphInfo
+    from ..workflow import DumpWriter
+    from .graph_model import GraphModel
 
 
 
@@ -21,7 +22,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class FlowEach(ComponentBase):
+class EachModel(ComponentBase):
     """フロー制御Eachクラス"""
 
 
@@ -30,46 +31,25 @@ class FlowEach(ComponentBase):
         return self.__items
 
     @property
-    def graph(self) -> GraphInfo:
+    def graph(self) -> GraphModel:
         return self.__graph
 
 
 
-
-    @final
     def __init__(
         self,
         items:Any,
         graph:List[Dict],
-        # 以下、共通パラメータ
-        name:str,
-        description:str=None,
-        depends:List=None,
-        condition:str=None,
-        parameters:Dict={},
-        stop_condition:str=None,
-        stop_message:str=None,
     ):
-        super().__init__(
-            name            = name,
-            description     = description,
-            depends         = depends,
-            condition       = condition,
-            parameters      = parameters,
-            stop_condition = stop_condition,
-            stop_message   = stop_message,
-        )
-        # -- ここまで共通処理
-        # -- 以下、クラス独自処理
+        logger.info(f"{self.__class__.__name__}.init: items={items}, graph.len={len(graph)}")
 
-        logger.info(f"{self.__class__.__name__}.init: items={items}, graph(len)={len(graph)}")
 
         # 循環参照を回避するためここでimport
-        from .graph import GraphInfo
+        from .graph_model import GraphModel
 
         # 設定
         self.__items = items
-        self.__graph = GraphInfo(graph_def=graph)
+        self.__graph = GraphModel(graph_def=graph)
 
 
 
@@ -82,11 +62,11 @@ class FlowEach(ComponentBase):
             payload:Dict[str, Any],
             outputs:Dict[str, Any]
         ) -> Any:
-        logger.info(f"each.{self.name}.run: payload.type:{type(payload).__name__}, payload.len:{len(payload)}")
+        logger.info(f"[{task_name}] each.run: payload.type:{type(payload).__name__}, payload.len:{len(payload)}")
 
 
         #------------------------
-        # items生成
+        # items を生成（変数割り当て）
         #------------------------
         items:List|Dict = evaluater.format(
             self.items,
@@ -95,7 +75,7 @@ class FlowEach(ComponentBase):
                 "payload"   : payload,
             },
         )
-        logger.debug(f"items: type={type(items).__name__}, count={len(items)}")
+        logger.info(f"items: type=<{type(items).__name__}>, len={len(items)}")
 
 
         #------------------------
@@ -103,7 +83,7 @@ class FlowEach(ComponentBase):
         #------------------------
 
         # 現在の each は次の each.parent にセット
-        parent_var:Dict[str, Any] = variables.get("each", {})
+        parent_var:Dict[str, Any] = variables.pop("each", {})
         if parent_var:
             parent_var = {
                 "parent": parent_var,
@@ -115,8 +95,8 @@ class FlowEach(ComponentBase):
         #------------------------
 
         # ループ実行
-        status:ComponentStatus = ComponentStatus.Running
         outputs[self.name] = defaultdict(dict)
+        status:TaskStatus = TaskStatus.Succeeded
         for i, item in enumerate(items):
 
             # キー情報を整理
@@ -132,7 +112,7 @@ class FlowEach(ComponentBase):
             }
 
             # 実行
-            self.__output = self.graph.run(
+            task_result = self.graph.run(
                 dump_prefix = f"{dump_prefix}[{key}]-",
                 dump_writer = dump_writer,
                 variables   = current_variables,
@@ -140,25 +120,17 @@ class FlowEach(ComponentBase):
                 outputs     = outputs[self.name][key],
             )
 
-            if self.graph.status == ComponentStatus.Stopped:
-                status = self.graph.status
+            if task_result.status == TaskStatus.Stopped:
+                status = task_result.status
                 break
-        else:
-            status = ComponentStatus.Succeeded
 
+        ret = TaskResultInfo(
+            status=status,
+            output=outputs[self.name],
+        )
 
         #------------------------
         # 終了
         #------------------------
-        logger.info("Flow-each.{}.{}: output.type={}, output.length={}".format(
-            self.name,
-            status,
-            type(self.__output).__name__,
-            len(self.__output) if hasattr(self.__output, '__len__') else None,
-        ))
-        return {
-            "output" : outputs[self.name],
-            "status" : status,
-        }
-
+        return ret
 

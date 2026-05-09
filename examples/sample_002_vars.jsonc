@@ -2,7 +2,7 @@
     "name": "sample-002-vars",
     "description" : "",
     "secret" : {
-        "apikey"        : "abcdefghijk",          // {var.*} {env.*} の使用を推奨。
+        "apikey"        : "abcdefghijk123456",    // {var.*} {env.*} の使用を推奨。
         "python_path"   : "{env.PYTHON_PATH}"     // これは本来 secret にする必要はないが、あくまでSampleとして。
     },
     "const" : {

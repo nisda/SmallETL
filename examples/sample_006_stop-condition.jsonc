@@ -1,7 +1,7 @@
 {
     "name": "sample-006-stop",
     "const" : {
-        "stop_task": "pass_02"  // 各タスクの stop_condition で判定。ここを変えれば、そこで中止される。
+        "stop_task": "each_01"  // 各タスクの stop_condition で判定。ここを変えれば、そこで中止される。
     },
     "dump_dir" : "{var.work_dir}/dump/{wf.name}/",
     "graph": [
@@ -35,7 +35,8 @@
                     ],
                     "stop_condition": "const.stop_task == 'each_pass_02'"
                 }
-            ]
+            ],
+            "stop_condition": "const.stop_task == 'each_01'"
         },
         {
             "name": "pass_02",
