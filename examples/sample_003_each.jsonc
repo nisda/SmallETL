@@ -9,7 +9,10 @@
         {
             "name": "each_01",
             "flow": "each",
-            "items": {"x": "XXX", "y": "YYY"},
+            "items": [
+                {"id": 1, "name": "Alice"},
+                {"id": 2, "name": "Bob"}
+            ],
             "graph" : [
                 {
                     "name": "pass_01",
@@ -25,6 +28,31 @@
                     "parameters" : [
                         "{const.a} | {const.b}",
                         "{each.index} | {each.key} | {each.value}"
+                    ]
+                },
+                {
+                    "name": "each_02_nest",
+                    "flow": "each",
+                    "items": "{each.value}",
+                    "graph" : [
+                        {
+                            "name": "pass_03",
+                            "job": "flow.Pass",
+                            "parameters" : {
+                                "const" : "{const.a} | {const.b}",
+                                "each" : "{each.index} | {each.key} | {each.value}",
+                                "parent" : "{each.parent.index} | {each.parent.key} | {each.parent.value}"
+                            }
+                        },
+                        {
+                            "name": "pass_04",
+                            "job": "flow.Pass",
+                            "parameters" : [
+                                "{const.a} | {const.b}",
+                                "{each.index} | {each.key} | {each.value}",
+                                "{each.parent.index} | {each.parent.key} | {each.parent.value}"
+                            ]
+                        }
                     ]
                 }
             ]
