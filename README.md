@@ -123,17 +123,12 @@ graph も Component を継承できないか？
 
 ## 課題
 
-* 終了コード
-	const の ExitCode と
-	ComponentBase の ComponentStatus に分かれてしまっている。
-		⇒これじゃ別でいい。
-	途中の Stopped 等を Workflow.run でキャッチできていない。正常終了扱いになっている。
-		⇒これは対応すべき。
-
 
 
 * フロー制御で条件分岐したい。
 	if ではなく switch があれば足りそう。
+	-> 一般的な switch 文と挙動が違うと紛らわしいので、「elif が使える if」のほうがいいかもしれない。
+
 	```json
 	{
 		"flow" : "switch",

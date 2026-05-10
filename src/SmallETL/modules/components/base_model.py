@@ -28,7 +28,7 @@ _NAME_REGEX:Final[List[str]] = [
     }
 ]
 
-_STOP_MSG_DEFAULT:Final[str] = "*** Task was stopped due to `stop_condition`."
+_STOP_MSG_DEFAULT:Final[str] = "*** Task was aborted due to `abort_condition`."
 
 
 # 共通
@@ -80,8 +80,8 @@ class ComponentBase():
         description:str     = None,
         condition:str       = None,
         parameters:Dict     = None,
-        stop_condition:str  = None,
-        stop_message:str    = None,
+        abort_condition:str  = None,
+        abort_message:str    = None,
         # **kwargs必須。wrapped_init で sig.bind するため。
         **kwargs
     ):
@@ -93,8 +93,8 @@ class ComponentBase():
                 f"description={description}",
                 f"condition={condition}",
                 f"parameters={parameters}",
-                f"stop_condition={stop_condition}",
-                f"stop_message={stop_message}",
+                f"abort_condition={abort_condition}",
+                f"abort_message={abort_message}",
             ])
         )
 
@@ -110,8 +110,8 @@ class ComponentBase():
         self.__description      = description
         self.__condition        = condition
         self.__parameters       = parameters
-        self.__stop_condition   = stop_condition
-        self.__stop_message     = stop_message
+        self.__abort_condition   = abort_condition
+        self.__abort_message     = abort_message
 
         # 終了
         return
@@ -140,12 +140,12 @@ class ComponentBase():
         return self.__parameters
 
     @property
-    def stop_condition(self) -> str:
-        return self.__stop_condition
+    def abort_condition(self) -> str:
+        return self.__abort_condition
 
     @property
-    def stop_message(self) -> str:
-        return self.__stop_message
+    def abort_message(self) -> str:
+        return self.__abort_message
 
 
 
@@ -262,20 +262,20 @@ class ComponentBase():
 
 
         #------------------------
-        # 中止判定（stop_condition）
+        # 中止判定（abort_condition）
         #------------------------
-        if task_result.status != TaskStatus.Stopped:
+        if task_result.status != TaskStatus.Aborted:
             # condition が設定されていたら判定、未設定時は False
-            is_stop:bool = evaluater.eval(self.stop_condition, mapping=mapping_data) \
-                if self.stop_condition else False
+            is_abort:bool = evaluater.eval(self.abort_condition, mapping=mapping_data) \
+                if self.abort_condition else False
 
-            if is_stop:
+            if is_abort:
                 # メッセージ表示
-                stop_msg = self.stop_message or _STOP_MSG_DEFAULT
-                logger.info(f"[{task_name}] stopped: {stop_msg}")
+                abort_msg = self.abort_message or _STOP_MSG_DEFAULT
+                logger.info(f"[{task_name}] aborted: {abort_msg}")
                 # ステータス上書き
                 task_result = TaskResultInfo(
-                    status = TaskStatus.Stopped,
+                    status = TaskStatus.Aborted,
                     output = task_result.output,
                 )
 

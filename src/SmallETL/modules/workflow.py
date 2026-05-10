@@ -1,6 +1,6 @@
 # coding: utf-8
 
-from typing import Dict, Any, overload, List, Iterable
+from typing import Dict, Any, overload, List, Iterable, Self
 import logging
 from pathlib import Path
 from datetime import datetime
@@ -14,6 +14,7 @@ import math
 from enum import IntEnum
 from .components.graph_model import GraphModel
 from .common.shared import evaluater
+from .components.result_info import TaskResultInfo, TaskStatus
 from ..libs.json_ex import JsonEx
 
 
@@ -111,6 +112,12 @@ class ExitCode(IntEnum):
     Succeeded = 0
     Aborted = 1
 
+    @classmethod
+    def convert_from_task_status_code(cls, task_status:TaskStatus) -> Self:
+        if task_status == TaskStatus.Aborted:
+            return ExitCode.Aborted
+        else:
+            return ExitCode.Succeeded
 
 
 
@@ -247,7 +254,7 @@ class WorkFlow():
             outputs:Dict[str, Any] = {}
 
             # graph 実行
-            self.graph.run(
+            ret = self.graph.run(
                 dump_prefix = "",
                 dump_writer = dump_writer,
                 variables   = variables,
@@ -255,15 +262,17 @@ class WorkFlow():
                 outputs     = outputs,
             )
 
+            wf_status = ExitCode.convert_from_task_status_code(ret.status)
+
             # 終了処理
             end_time:datetime = datetime.now()
-            logger.info(f"[{run_id}] End Workflow `{self.name}`")
+            logger.info(f"[{run_id}] End Workflow `{self.name}` ({wf_status}:{wf_status.name})")
             dump_writer.put(filename="_outputs.json", content=outputs)
             return {
                 "run_id" : run_id,
                 "start_time" : start_time,
                 "end_time" : end_time,
-                "status"  : ExitCode.Succeeded,
+                "status"  : wf_status,
                 "outputs" : outputs,
             }
 

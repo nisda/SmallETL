@@ -120,7 +120,7 @@ class EachModel(ComponentBase):
                 outputs     = outputs[self.name][key],
             )
 
-            if task_result.status == TaskStatus.Stopped:
+            if task_result.status == TaskStatus.Aborted:
                 status = task_result.status
                 break
 

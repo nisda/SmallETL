@@ -4,7 +4,7 @@ from enum import StrEnum, auto
 
 class TaskStatus(StrEnum):
     Succeeded = auto()
-    Stopped = auto()
+    Aborted = auto()
     Skipped = auto()
 
 

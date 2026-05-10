@@ -73,7 +73,7 @@ class GraphModel():
             )
 
             # Stopped のときはその時点で終了
-            if task_result.status == TaskStatus.Stopped:
+            if task_result.status == TaskStatus.Aborted:
                 status = task_result.status
                 break
 
