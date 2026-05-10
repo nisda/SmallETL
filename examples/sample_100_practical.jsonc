@@ -13,7 +13,7 @@
             "name": "select_excel",
             "job": "console.select",
             "parameters" : {
-                "options"     : "{payload.find_excel}",
+                "options"     : "{output.find_excel}",
                 "message"     : "ファイルを選択してください。",
                 "list_format" : "{{filename}}, {{modified_iso}}"
             }
@@ -22,7 +22,7 @@
             "name": "read_excel_01",
             "job": "excel.read",
             "parameters" : {
-                "path" : "{payload.select_excel.path}",
+                "path" : "{output.select_excel.path}",
                 "sheetname" : "ユーザー",
                 "min_col": "B",
                 "min_row": 1
@@ -32,7 +32,7 @@
             "name": "read_excel_02",
             "job": "excel.read",
             "parameters" : {
-                "path" : "{payload.select_excel.path}",
+                "path" : "{output.select_excel.path}",
                 "sheetname" : "国"
             }
         },
@@ -54,7 +54,7 @@
         {
             "name": "loop-A",
             "flow": "each",
-            "items": "{payload.read_excel_01}",
+            "items": "{output.read_excel_01}",
             "graph" : [
                 {
                     "name": "pass_01",

@@ -179,7 +179,7 @@ class ComponentBase():
         #------------------------
         mapping_data = {
             **variables,
-            "payload"   : payload,
+            "output"   : payload,
         }
 
         #------------------------

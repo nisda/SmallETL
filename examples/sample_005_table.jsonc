@@ -15,7 +15,7 @@
             "name": "table_format_1",
             "job": "table.nop",
             "parameters" : {
-                "data" : "{payload.sample_table}",
+                "data" : "{output.sample_table}",
                 "output_format" : "dict,rows"
             }
         },
@@ -23,7 +23,7 @@
             "name": "table_format_2",
             "job": "table.nop",
             "parameters" : {
-                "data" : "{payload.sample_table}",
+                "data" : "{output.sample_table}",
                 "output_format" : "list,cols"
             }
         },
@@ -31,7 +31,7 @@
             "name": "table_format_3",
             "job": "table.nop",
             "parameters" : {
-                "data" : "{payload.sample_table}",
+                "data" : "{output.sample_table}",
                 "output_format" : "dict,cols"
             }
         },
@@ -39,7 +39,7 @@
             "name": "table_format_4",
             "job": "table.nop",
             "parameters" : {
-                "data" : "{payload.sample_table}",
+                "data" : "{output.sample_table}",
                 "output_format" : "list,rows"
             }
         }

@@ -72,7 +72,7 @@ class EachModel(ComponentBase):
             self.items,
             mapping={
                 **variables,
-                "payload"   : payload,
+                "output"   : payload,
             },
         )
         logger.info(f"items: type=<{type(items).__name__}>, len={len(items)}")

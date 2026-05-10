@@ -16,15 +16,15 @@
             "job": "flow.Pass",
             "condition" : "max(10, 20, 30) < abs(-100)",
             "parameters" : {
-                "len"       : "{len(payload.pass_01)}",
-                "type"      : "{type(payload.pass_01[0])}",
+                "len"       : "{len(output.pass_01)}",
+                "type"      : "{type(output.pass_01[0])}",
                 "round"     : "{round(123.456, 0)}",
                 "floor"     : "{floor(123.456, 2)}",
                 "ceil"      : "{ceil(123.456, 2)}",
-                "lookup1"   : "{lookup(payload.pass_01, 'id', 2, 'name')}",
-                "lookup2"   : "{lookup(payload.pass_01, 'id', 0, 'name')}",
-                "lookup3"   : "{lookup(payload.pass_01, 'id', 0, 'name', '-Unknown-')}",
-                "lookup4"   : "{lookup(payload.pass_01, 'id', 3)}"
+                "lookup1"   : "{lookup(output.pass_01, 'id', 2, 'name')}",
+                "lookup2"   : "{lookup(output.pass_01, 'id', 0, 'name')}",
+                "lookup3"   : "{lookup(output.pass_01, 'id', 0, 'name', '-Unknown-')}",
+                "lookup4"   : "{lookup(output.pass_01, 'id', 3)}"
             }
         }
     ]

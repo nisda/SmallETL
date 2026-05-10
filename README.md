@@ -15,8 +15,8 @@ python ./workflow/sample_01.json --log-level DEBUG
 | secret | dict | `var` `env` |
 | const | dict | `var` `env` `wf` `secret` |
 | dump_dir | str | `var` `env` `wf` `secret` `const` |
-| graph | list | `var` `env` `wf` `secret` `const` `payload`  |
-| graph<BR> (inside each) | list | `var` `env`  `wf` `secret` `const` `payload` `each` `each.parent`  |
+| graph | list | `var` `env` `wf` `secret` `const` `output`  |
+| graph<BR> (inside each) | list | `var` `env`  `wf` `secret` `const` `output` `each` `each.parent`  |
 
 ### 変数
 
@@ -44,11 +44,11 @@ python ./workflow/sample_01.json --log-level DEBUG
 | -- | -- |
 | `{const.xxx}` | workflow 定義の "const" で設定した値。 |
 
-#### payload
+#### output
 
 | 変数 | 備考 |
 | -- | -- |
-| `{payload.xxx}` | 実行済みjobの出力結果。 |
+| `{output.xxx}` | 実行済みjobの出力結果。 |
 
 #### each
 
@@ -111,7 +111,7 @@ graph も Component を継承できないか？
 {
 	"name": "loop-A"
 	"flow": "each":						# job との並存は不可とする
-	"items": "{payload.job_name_01}",	# これの要素でループする
+	"items": "{output.job_name_01}",	# これの要素でループする
 	"graph" : [
 		{
 			...
@@ -126,14 +126,9 @@ graph も Component を継承できないか？
 * 終了コード
 	const の ExitCode と
 	ComponentBase の ComponentStatus に分かれてしまっている。
+		⇒これじゃ別でいい。
 	途中の Stopped 等を Workflow.run でキャッチできていない。正常終了扱いになっている。
-
-
-* payload という文言
-	output のほうがわかりやすそう。
-		⇒内部処理に色々影響ありそうなので要注意。
-			⇒後回し
-
+		⇒これは対応すべき。
 
 
 

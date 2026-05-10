@@ -19,13 +19,13 @@
             "parameters" : [
                 "DUMMY1",
                 "DUMMY2",
-                {"pass_01_result": "{payload.pass_01}"} 
+                {"pass_01_result": "{output.pass_01}"} 
             ]
         },
         {
             "name": "custom_echo_01",
             "job": "custom.sample.echo",
-            "parameters" : "{payload.pass_02[0]}"
+            "parameters" : "{output.pass_02[0]}"
         }
     ]
 }
