@@ -97,10 +97,17 @@ class DumpWriter():
         if self.__dump_dir is None:
             return None
 
-        # dump出力
-        dump_path: Path = self.__dump_dir.joinpath(filename)
-        JsonEx.dump(content, dump_path)
-        return dump_path
+        if isinstance(content, str):
+            dump_path: Path = self.__dump_dir.joinpath(filename).with_suffix('.txt')
+            with open(dump_path, "w", encoding="utf-8") as f:
+                f.write(content)
+            return dump_path
+
+        else:
+            # dump出力
+            dump_path: Path = self.__dump_dir.joinpath(filename)
+            JsonEx.dump(content, dump_path)
+            return dump_path
 
 
 
