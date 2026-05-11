@@ -1,5 +1,5 @@
 {
-    "name": "sample-004-condition",
+    "name": "sample-004-precondition",
     "const" : {
         "a": "{var.work_dir}",
         "b": "{wf.run_id}"
@@ -9,7 +9,7 @@
         {
             "name": "each_01",
             "flow": "each",
-            // "condition" : "False",
+            // "precondition" : "False",
             "items": ["AAA", "BBB", "CCC", "DDD"],
             "graph" : [
                 {
@@ -23,8 +23,8 @@
                 {
                     "name": "pass_02",
                     "job": "flow.Pass",
-                    // "condition" : "each.index == 0 or each.index == 2", 
-                    "condition" : "each.index % 2 == 0",
+                    // "precondition" : "each.index == 0 or each.index == 2", 
+                    "precondition" : "each.index % 2 == 0",
                     "parameters" : {
                         "pass_01_output" : "{output.each_01[each.key].pass_01}"
                     }

@@ -14,7 +14,7 @@
         {
             "name": "pass_02",
             "job": "flow.Pass",
-            "condition" : "max(10, 20, 30) < abs(-100)",
+            "precondition" : "max(10, 20, 30) < abs(-100)",
             "parameters" : {
                 "len"       : "{len(output.pass_01)}",
                 "type"      : "{type(output.pass_01[0])}",

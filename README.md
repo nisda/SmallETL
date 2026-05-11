@@ -105,7 +105,7 @@ ComponentBase		output を保存する。
 						本来は FlowCompornent とか継承クラスを挟んだほうがいいんだろうけど、そこまでは面倒。
 
 graph も Component を継承できないか？
-	⇒ Condition とか無いのでNG。
+	⇒ precondition とか無いのでNG。
 
 #### each の書き方
 {
@@ -123,7 +123,7 @@ graph も Component を継承できないか？
 
 ## 課題
 
-* condition でスキップしたときの代替値
+* precondition でスキップしたときの代替値
 	* 最低限、 output に None くらいは必要。
 	  もしくは isset 関数を用意する？
 	* 未処理の None と処理したうえでの Noen の区別がつかないので、isset のほうがいいかも。

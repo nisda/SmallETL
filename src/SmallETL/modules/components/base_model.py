@@ -78,10 +78,10 @@ class ComponentBase():
         self,
         name:str,
         description:str     = None,
-        condition:str       = None,
+        precondition:str    = None,
         parameters:Dict     = None,
-        abort_condition:str  = None,
-        abort_message:str    = None,
+        abort_condition:str = None,
+        abort_message:str   = None,
         # **kwargs必須。wrapped_init で sig.bind するため。
         **kwargs
     ):
@@ -91,7 +91,7 @@ class ComponentBase():
             ", ".join([
                 f"name={name}",
                 f"description={description}",
-                f"condition={condition}",
+                f"precondition={precondition}",
                 f"parameters={parameters}",
                 f"abort_condition={abort_condition}",
                 f"abort_message={abort_message}",
@@ -108,10 +108,10 @@ class ComponentBase():
         # 設定
         self.__name = name
         self.__description      = description
-        self.__condition        = condition
+        self.__precondition     = precondition
         self.__parameters       = parameters
-        self.__abort_condition   = abort_condition
-        self.__abort_message     = abort_message
+        self.__abort_condition  = abort_condition
+        self.__abort_message    = abort_message
 
         # 終了
         return
@@ -132,8 +132,8 @@ class ComponentBase():
         return self.__description
 
     @property
-    def condition(self) -> str:
-        return self.__condition
+    def precondition(self) -> str:
+        return self.__precondition
 
     @property
     def parameters(self) -> Dict[str, Any]:
@@ -183,16 +183,16 @@ class ComponentBase():
         }
 
         #------------------------
-        # 実行条件判定（condition）
+        # 前提条件判定 precondition
         #------------------------
 
-        # condition が設定されていたら判定、未設定時はTrue
-        condition_result:bool = \
-            evaluater.eval(self.condition, mapping=mapping_data) \
-            if self.condition else True
+        # precondition が設定されていたら判定、未設定時はTrue
+        precondition_result:bool = \
+            evaluater.eval(self.precondition, mapping=mapping_data) \
+            if self.precondition else True
 
-        if not condition_result:
-            skip_msg:str = "skipped by `condition`."
+        if not precondition_result:
+            skip_msg:str = "skipped by `precondition`."
 
             # 出力結果はNull固定
             outputs[self.name] = None
