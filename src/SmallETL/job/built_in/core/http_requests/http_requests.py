@@ -24,7 +24,7 @@ import random
 import string
 import io
 import os
-
+import gzip
 
 class CaseInsensitiveDict(dict):
     @classmethod
@@ -118,14 +118,19 @@ class Response:
 
     @property
     def content(self) -> bytes:
-        return self._content
+        encodings = str(self.headers.get("content-encoding", "")).split(",")
+        encodings = [ x.strip() for x in encodings ]
+        if "gzip" in encodings:
+            return gzip.decompress(self._content)
+        else:
+            return self._content
 
     @property
     def text(self) -> str:
-        return self._content.decode()
+        return self.content.decode()
 
     def json(self) -> Any:
-        return jsonlib.loads(self._content.decode())
+        return jsonlib.loads(self.content.decode())
 
     def raise_for_status(self) -> None:
         if self._ex is None:
