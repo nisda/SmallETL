@@ -124,8 +124,11 @@ graph も Component を継承できないか？
 ## 課題
 
 * condition でスキップしたときの代替値
-	最低限、 output に None くらいは必要。
-
+	* 最低限、 output に None くらいは必要。
+	  もしくは isset 関数を用意する？
+	* 未処理の None と処理したうえでの Noen の区別がつかないので、isset のほうがいいかも。
+	  ⇒  isset 関数に渡そうとした時点で NameError, IndexError, KeyError が発生するのでは。
+	      ast 解析に組み込む必要がありそう。
 
 * Secret の扱い
 	* コマンドラインでも追加できるように。

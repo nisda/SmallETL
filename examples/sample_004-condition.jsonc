@@ -15,20 +15,26 @@
                 {
                     "name": "pass_01",
                     "job": "flow.Pass",
-                    // "condition" : "each.index == 0 or each.index == 2", 
-                    "condition" : "each.index % 2 == 0",     
-                    "parameters" : {
-                        "const" : "{const.a} | {const.b}",
-                        "each" : "{each.index} | {each.key} | {each.value}"
-                    }
-                },
-                {
-                    "name": "pass_02",
-                    "job": "flow.Pass",
                     "parameters" : [
                         "{const.a} | {const.b}",
                         "{each.index} | {each.key} | {each.value}"
                     ]
+                },
+                {
+                    "name": "pass_02",
+                    "job": "flow.Pass",
+                    // "condition" : "each.index == 0 or each.index == 2", 
+                    "condition" : "each.index % 2 == 0",
+                    "parameters" : {
+                        "pass_01_output" : "{output.each_01[each.key].pass_01}"
+                    }
+                },
+                {
+                    "name": "pass_03",
+                    "job": "flow.Pass",
+                    "parameters" : {
+                        "pass_02_output" : "{output.each_01[each.key].pass_02}"
+                    }
                 }
             ]
         }

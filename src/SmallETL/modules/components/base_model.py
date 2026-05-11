@@ -194,6 +194,9 @@ class ComponentBase():
         if not condition_result:
             skip_msg:str = "skipped by `condition`."
 
+            # 出力結果はNull固定
+            outputs[self.name] = None
+
             # dump出力
             dump_file:str = f"{task_name}.skip.json"
             dump_writer.put(filename=dump_file, content=skip_msg)
@@ -265,7 +268,7 @@ class ComponentBase():
         # 中止判定（abort_condition）
         #------------------------
         if task_result.status != TaskStatus.Aborted:
-            # condition が設定されていたら判定、未設定時は False
+            # abort_condition が設定されていたら判定、未設定時は False
             is_abort:bool = evaluater.eval(self.abort_condition, mapping=mapping_data) \
                 if self.abort_condition else False
 
