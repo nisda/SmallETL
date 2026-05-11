@@ -37,20 +37,17 @@ def nop(data:Any, output_format:str="dict,rows"):
 
 
 
-def filter(data:Any, condition:Dict[str, Any]|List[Dict[str, Any]], output_format:str="dict,rows"):
+def filter(
+        data:Any,
+        match_with:Dict[str, Any]|List[Dict[str, Any]] = {},
+        mismatch_with:Dict[str, Any]|List[Dict[str, Any]] = {},
+        output_format:str="dict,rows"):
+
     """フィルタリング（条件抽出）"""
     dt_in = DataTable(data=data)
-    dt_out = dt_in.filter(condition=condition)
+    dt_out = dt_in.filter(match_with=match_with, mismatch_with=mismatch_with)
     return __output_format(dt_out, output_format)
 
-
-
-def filter_multiple(data:Any, conditions:List[Dict[str, Any]|List[Dict[str, Any]]], output_format:str="dict,rows"):
-    """フィルタリング（条件抽出）複数"""
-    dt = DataTable(data=data)
-    for condition in conditions:
-        dt = dt.filter(condition=condition)
-    return __output_format(dt, output_format)
 
 
 
@@ -73,11 +70,22 @@ def join(
         output_format:str="dict,rows",
     ):
     """join"""
-    params:Dict[str, Any] = locals()
     
-    dt_left = DataTable(data=params.pop("data_left"))
-    dt_right = DataTable(data=params.pop("data_right"))
-    dt_out = dt_left.join(table=dt_right, **params)
+    dt_left     = [dt_left] if isinstance(dt_left, str) else dt_left
+    data_right  = [data_right] if isinstance(data_right, str) else data_right
+
+    dt_left = DataTable(data=data_left)
+    dt_right = DataTable(data=data_right)
+
+    dt_out = dt_left.join(
+        table           = dt_right,
+        how             = how,
+        left_on         = left_on,
+        right_on        = right_on,
+        left_prefix     = left_prefix,
+        right_prefix    = right_prefix,
+    )
+
     return __output_format(dt_out, output_format)
 
 
@@ -102,22 +110,25 @@ def convert(
     ):
     """データ変換"""
 
-    params_:Dict[str, Any] = locals()
-    data = params_.pop("data")
-
-
     # テーブル生成
-    dt_in = DataTable(data=data)
+    dt = DataTable(data=data)
 
     # 繰り返し処理
     error_data = []
 
     # 変換実行
-    key = params_["column"]
-    dt_in[key] = dt_in.convert(**params_, error_data=error_data)
+    dt[column]   = dt.convert(
+        column      = column,
+        dtype       = dtype,
+        params      = params,
+        is_null     = is_null,
+        null_if     = null_if,
+        errors      = errors,
+        error_data  = error_data,
+    )
 
     return {
-        "output" : __output_format(dt_in, output_format),
+        "output" : __output_format(dt, output_format),
         "errors" : error_data,  # error_dataのoutput_formatをどうするかは悩みどころ。
     }
 
@@ -128,9 +139,9 @@ def convert_multiple(data, params:List[Dict], output_format:str="dict,rows"):
 
     errors: List = []
     for param in params:
-        # カラム名が必要であるため繰り返し中は output_format 固定
-        ret = convert(data, output_format="dict,rows", **param)
-        # 結果を保持
+        # カラム名が必要であるため繰り返し中の output_format は固定
+        ret = convert(data, **param, output_format="dict,rows")
+        # 結果を置き換え
         data = ret["output"]
         errors.append(ret["errors"])
 

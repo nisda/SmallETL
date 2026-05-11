@@ -482,7 +482,7 @@ class DataTable():
 
 
     """フィルタリング"""
-    def filter(self, condition:Dict[str, Any]|List[Dict[str, Any]]) -> Self:
+    def filter(self, match_with:Dict[str, Any]|List[Dict[str, Any]]={}, mismatch_with:Dict[str, Any]|List[Dict[str, Any]]={}) -> Self:
         """
         フィルタリング（条件抽出）
         現在の DataTable は変更せず、データ抽出した DataTable を返却する。
@@ -490,7 +490,8 @@ class DataTable():
 
         data = [
             d for d in self.rows(type='dict')
-            if self._Tools.is_contains(data=d, condition=condition)
+            if ( self._Tools.is_contains(data=d, condition=match_with) ) \
+                and ( not mismatch_with or not self._Tools.is_contains(data=d, condition=mismatch_with))
         ]
         return DataTable(data=data)
 
