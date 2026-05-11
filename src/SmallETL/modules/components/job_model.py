@@ -56,18 +56,23 @@ class JobModel(ComponentBase):
         module_path:str = ".".join(parts[0:-1])
         module_name:str = parts[-1]
 
-        if module_path.startswith("custom."):
-            module_path_buildin:str = f"...job.{module_path}"
+        if module_path.startswith("local."):
+            module_path:str = ".".join(parts[1:-1])
+            package_path = None
+
+        elif module_path.startswith("custom."):
+            module_path:str = f"...job.{module_path}"
+
         else:
-            module_path_buildin:str = f"...job.built_in.{module_path}"
+            module_path:str = f"...job.built_in.{module_path}"
 
         logger.debug(f"package : {package_path}")
-        logger.debug(f"buildin : {module_path_buildin}")
+        logger.debug(f"path    : {module_path}")
         logger.debug(f"module  : {module_name}")
 
 
         # job-module を読み込み
-        job_mod = importlib.import_module(module_path_buildin, package=package_path)
+        job_mod = importlib.import_module(module_path, package=package_path)
         job_func:Callable = getattr(job_mod, module_name)
 
         # function 返却
