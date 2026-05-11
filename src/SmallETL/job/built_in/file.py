@@ -31,3 +31,9 @@ def copy(src:str, dst:str):
     """ファイルコピー"""
     return shutil.copy(src, dst)
 
+
+def write(path:str, content:str):
+    """ファイル書き出し"""
+    with open(path, "r", encoding="utf-8") as f:
+        f.write(content)
+
