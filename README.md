@@ -131,13 +131,19 @@ graph も Component を継承できないか？
 
 
 * abort_condition
-	* 条件とメッセージの組み合わせ、複数セットできるようにしたい。
+	* 構造を変更。
+	  定義はロード時にチェックできるようにしたいが、後回し。
 	* 結果参照が長い。 `output.task_name.xxxx`
 	  今のタスクの output に限定した変数（プレフィックス）を用意できないか。
 		ret
 		current
+
 * abort_message
 	* format かけられるように。
+
+* output
+	* 調整できりょうにしたい。
+	* abort の並びに `output_format` を書けるようにしようか。
 
 
 * precondition でスキップしたときの代替値

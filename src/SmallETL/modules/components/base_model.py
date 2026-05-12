@@ -28,7 +28,7 @@ _NAME_REGEX:Final[List[str]] = [
     }
 ]
 
-_STOP_MSG_DEFAULT:Final[str] = "Task was aborted due to `abort_condition`."
+_STOP_MSG_DEFAULT:Final[str] = "Task was aborted due to `abort.condition`."
 
 
 # 共通
@@ -72,6 +72,14 @@ class ComponentBase():
         cls.__init__ = wrapped_init
 
 
+    def __param_to_list(self, value:Any) -> List[Any]:
+        if value is None:
+            return []
+        if isinstance(value, List):
+            return value
+        else:
+            return [value]
+
 
     @final
     def __init__(
@@ -80,8 +88,7 @@ class ComponentBase():
         description:str     = None,
         precondition:str    = None,
         parameters:Dict     = None,
-        abort_condition:str = None,
-        abort_message:str   = None,
+        abort:List|Dict     = None,
         # **kwargs必須。wrapped_init で sig.bind するため。
         **kwargs
     ):
@@ -93,8 +100,7 @@ class ComponentBase():
                 f"description={description}",
                 f"precondition={precondition}",
                 f"parameters={parameters}",
-                f"abort_condition={abort_condition}",
-                f"abort_message={abort_message}",
+                f"abort={abort}",
             ])
         )
 
@@ -110,8 +116,7 @@ class ComponentBase():
         self.__description      = description
         self.__precondition     = precondition
         self.__parameters       = parameters
-        self.__abort_condition  = abort_condition
-        self.__abort_message    = abort_message
+        self.__abort            = self.__param_to_list(abort)
 
         # 終了
         return
@@ -140,12 +145,8 @@ class ComponentBase():
         return self.__parameters
 
     @property
-    def abort_condition(self) -> str:
-        return self.__abort_condition
-
-    @property
-    def abort_message(self) -> str:
-        return self.__abort_message
+    def abort(self) -> List[Dict]:
+        return self.__abort
 
 
 
@@ -265,24 +266,33 @@ class ComponentBase():
 
 
         #------------------------
-        # 中止判定（abort_condition）
+        # 中止判定（abort）
         #------------------------
         if task_result.status != TaskStatus.Aborted:
-            # abort_condition が設定されていたら判定、未設定時は False
-            is_abort:bool = evaluater.eval(self.abort_condition, mapping=mapping_data) \
-                if self.abort_condition else False
+            for i, abort_config in enumerate(self.abort):
+                abort_condition:str = abort_config.get("condition", None)
+                abort_message:str   = abort_config.get("message", _STOP_MSG_DEFAULT)
 
-            if is_abort:
-                # メッセージ表示
-                abort_msg = self.abort_message or _STOP_MSG_DEFAULT
-                logger.warning(f"[{task_name}] aborted: {abort_msg}")
-                # ステータス上書き
-                task_result = TaskResultInfo(
-                    status = TaskStatus.Aborted,
-                    output = task_result.output,
-                )
-                # Workflow Abort
-                raise TaskAbort(f"{abort_msg.rstrip(".")} at [{task_name}]")
+                # condition 未設定はエラー
+                if abort_condition is None:
+                    raise ValueError(f"`abort.condition` is not set in `{task_name}.abort[{i}]`")
+
+                # 判定
+                is_abort:bool = evaluater.eval(abort_condition, mapping=mapping_data)
+
+                if is_abort:
+                    # メッセージ調整
+                    abort_message = evaluater.format(abort_message, mapping=mapping_data)
+
+                    # メッセージ表示
+                    logger.warning(f"[{task_name}] aborted: {abort_message}")
+                    # ステータス上書き
+                    task_result = TaskResultInfo(
+                        status = TaskStatus.Aborted,
+                        output = task_result.output,
+                    )
+                    # Workflow Abort
+                    raise TaskAbort(f"{abort_message.rstrip(".")} at [{task_name}]")
 
 
         #------------------------

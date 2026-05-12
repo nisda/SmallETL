@@ -1,7 +1,8 @@
 {
     "name": "sample-006-stop",
     "const" : {
-        "abort_task": "each_01"  // 各タスクの abort_condition で判定。ここを変えれば、そこで中止される。
+        // 各タスクの condition で判定につかう定数。ここを変えればそのタスクで中止される。
+        "abort_task": "pass_01_A"
     },
     "dump_dir" : "{var.work_dir}/dump/{wf.name}/",
     "graph": [
@@ -11,8 +12,15 @@
             "parameters" : {
                 "aaa" : "AAA"
             },
-            "abort_condition": "const.abort_task == 'pass_01'",
-            "abort_message"  : "*** const 指定により停止されました。"
+            "abort" : [
+                {
+                    "condition": "const.abort_task == 'pass_01_A'",
+                    "message"  : "*** const 指定により停止されました。"
+                },
+                {
+                    "condition": "const.abort_task == 'pass_01_B'"
+                }
+            ]
         },
         {
             "name": "each_01",
@@ -25,7 +33,9 @@
                     "parameters" : {
                         "each" : "{each.index} | {each.key} | {each.value}"
                     },
-                    "abort_condition": "const.abort_task == 'each_pass_01'"
+                    "abort" : {
+                        "condition": "const.abort_task == 'each_pass_01'"
+                    }
                 },
                 {
                     "name": "each_pass_02",
@@ -33,10 +43,14 @@
                     "parameters" : [
                         "{each.index} | {each.key} | {each.value}"
                     ],
-                    "abort_condition": "const.abort_task == 'each_pass_02'"
+                    "abort" : {
+                        "condition": "const.abort_task == 'each_pass_02'"
+                    }
                 }
             ],
-            "abort_condition": "const.abort_task == 'each_01'"
+            "abort" : {
+                "condition": "const.abort_task == 'each_01'"
+            }
         },
         {
             "name": "pass_02",
@@ -44,8 +58,10 @@
             "parameters" : {
                 "bbb" : "BBB"
             },
-            "abort_condition": "const.abort_task == 'pass_02'",
-            "abort_message"  : "*** const 指定により停止されました。"
+            "abort" : {
+                "condition": "const.abort_task == 'pass_02'",
+                "message"  : "処理中止！　`{const.abort_task}` <- 変数も使えるよ"
+            }
         }
     ]
 }
