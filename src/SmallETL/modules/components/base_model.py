@@ -85,10 +85,11 @@ class ComponentBase():
     def __init__(
         self,
         name:str,
-        description:str     = None,
-        precondition:str    = None,
-        parameters:Dict     = None,
-        abort:List|Dict     = None,
+        description:str             = None,
+        precondition:str            = None,
+        parameters:Dict             = None,
+        output_format:str|List|Dict = None,
+        abort:List|Dict             = None,
         # **kwargs必須。wrapped_init で sig.bind するため。
         **kwargs
     ):
@@ -100,6 +101,7 @@ class ComponentBase():
                 f"description={description}",
                 f"precondition={precondition}",
                 f"parameters={parameters}",
+                f"output_format={output_format}",
                 f"abort={abort}",
             ])
         )
@@ -116,6 +118,7 @@ class ComponentBase():
         self.__description      = description
         self.__precondition     = precondition
         self.__parameters       = parameters
+        self.__output_format    = output_format
         self.__abort            = self.__param_to_list(abort)
 
         # 終了
@@ -143,6 +146,10 @@ class ComponentBase():
     @property
     def parameters(self) -> Dict[str, Any]:
         return self.__parameters
+
+    @property
+    def output_format(self) -> str|List|Dict:
+        return self.__output_format
 
     @property
     def abort(self) -> List[Dict]:
@@ -254,15 +261,34 @@ class ComponentBase():
                 outputs     = outputs,
             )
 
-        # 出力結果をセット
-        outputs[self.name] = task_result.output
+        #------------------------
+        #  実行結果を整形＆セット
+        #------------------------
+
+        # 実行結果にフォーマットを適用
+        if self.output_format is None:
+            result_original     = task_result.output
+            result_formatted    = task_result.output
+        else:
+            result_original     = task_result.output
+            result_formatted    = evaluater.format(self.output_format, mapping={ "ret": task_result.output })
+
+        # 実行結果にフォーマット適用後のデータをセット。
+        outputs[self.name]  = result_formatted
+        mapping_data["ret"] = result_formatted
 
 
         #------------------------
         # dump出力
         #------------------------
         dump_file:str = f"{task_name}.json"
-        dump_writer.put(filename=dump_file, content=task_result.output)
+        dump_writer.put(filename=dump_file, content=result_formatted)
+
+        # output_format の指定がある場合はオリジナル（変更前）も出力
+        if self.output_format:
+            dump_file_org:str = f"{task_name}.org.json"
+            dump_writer.put(filename=dump_file_org, content=result_original)
+
 
 
         #------------------------

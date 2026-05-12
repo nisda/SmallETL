@@ -123,28 +123,20 @@ graph も Component を継承できないか？
 
 ## 課題
 
+* 各種 mapping 処理
+	dict の value にはマッピング対応しているが、key はできない。
+
 * localジョブ
 	うまく参照できない条件がある？
 
-* dict マージする関数があるといいよね
-	`<dict> | <dict>` でいける。
-
 
 * abort_condition
-	* 構造を変更。
-	  定義はロード時にチェックできるようにしたいが、後回し。
-	* 結果参照が長い。 `output.task_name.xxxx`
-	  今のタスクの output に限定した変数（プレフィックス）を用意できないか。
-		ret
-		current
+	* 定義はロード時にチェックできるようにしたいが、後回し。
 
-* abort_message
-	* format かけられるように。
 
-* output
-	* 調整できりょうにしたい。
-	* abort の並びに `output_format` を書けるようにしようか。
-
+* output_format
+	* ループに対応していない。
+		output_format のトップレベルを List にした場合は、処理結果をループしてマッピングするとか？
 
 * precondition でスキップしたときの代替値
 	* 未処理の None と、処理したうえでの None の区別がつかない。isset のような関数を用意したい。

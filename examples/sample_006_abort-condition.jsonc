@@ -13,6 +13,7 @@
                 "aaa" : "AAA"
             },
             "abort" : [
+                //  複数の abort 条件で判定可能。１つずつ判定する（OR条件）
                 {
                     "condition": "const.abort_task == 'pass_01_A'",
                     "message"  : "*** const 指定により停止されました。"
@@ -30,10 +31,12 @@
                 {
                     "name": "each_pass_01",
                     "job": "flow.Pass",
+                    "description" : "ループの中でもabortすればそこで打ち切り",
                     "parameters" : {
                         "each" : "{each.index} | {each.key} | {each.value}"
                     },
                     "abort" : {
+                        // each の中でも abort 条件に合致すればそこで打ち切り
                         "condition": "const.abort_task == 'each_pass_01'"
                     }
                 },
@@ -44,11 +47,13 @@
                         "{each.index} | {each.key} | {each.value}"
                     ],
                     "abort" : {
+                        // each の中でも abort 条件に合致すればそこで打ち切り
                         "condition": "const.abort_task == 'each_pass_02'"
                     }
                 }
             ],
             "abort" : {
+                // ループが終わったら判定される。
                 "condition": "const.abort_task == 'each_01'"
             }
         },
@@ -59,8 +64,25 @@
                 "bbb" : "BBB"
             },
             "abort" : {
+                //  変数も使える
                 "condition": "const.abort_task == 'pass_02'",
-                "message"  : "処理中止！　`{const.abort_task}` <- 変数も使えるよ"
+                "message"  : "処理中止！  `{const.abort_task}` <- 変数も使えるよ"
+            }
+        },
+        {
+            "name": "pass_03",
+            "job": "flow.Pass",
+            "parameters" : {
+                "result" : {
+                    "code" : -1,
+                    "msg"  : "pass_03 で異常終了が発生",
+                    "msg2" : "ということにしておく。"
+                }
+            },
+            "abort" : {
+                //  変数 ret で、このタスクの結果も参照できる。
+                "condition": "ret.result.code != 0",
+                "message"  : "[exit={ret.result.code}] {ret.result.msg}"
             }
         }
     ]

@@ -1,0 +1,39 @@
+{
+    "name": "sample-008-output-format",
+    "dump_dir" : "{var.work_dir}/dump/{wf.name}/",
+    "graph": [
+        {
+            "name": "pass_01",
+            "job": "flow.Pass",
+            "description" : "変更なし",
+            "parameters" : [
+                {"id": 1, "name": "Alice"   , "age": 18},
+                {"id": 2, "name": "Bob"     , "age": 32},
+                {"id": 3, "name": "Cris"    , "age": 24}
+            ]
+        },
+        {
+            "name": "pass_02",
+            "job": "flow.Pass",
+            "description" : "実行結果の0番目を抽出",
+            "parameters" : [
+                {"id": 1, "name": "Alice"   , "age": 18},
+                {"id": 2, "name": "Bob"     , "age": 32},
+                {"id": 3, "name": "Cris"    , "age": 24}
+            ],
+            "output_format" : "{ret[1]}"
+        },
+        {
+            "name": "pass_03",
+            "job": "flow.Pass",
+            "description" : "実行結果の構造も変更する",
+            "parameters" : [
+                {"id": 1, "name": "Alice"   , "age": 18},
+                {"id": 2, "name": "Bob"     , "age": 32},
+                {"id": 3, "name": "Cris"    , "age": 24}
+            ],
+            // ループはできないので、単一データ以外での使いどころは難しい。
+            "output_format" : {"id": "{ret[0].id}", "attr": ["{ret[0].name}", "{ret[0].age}"]}               
+        }
+    ]
+}
