@@ -123,12 +123,29 @@ graph も Component を継承できないか？
 
 ## 課題
 
+* localジョブ
+	うまく参照できない条件がある？
+
+* dict マージする関数があるといいよね
+	`<dict> | <dict>` でいける。
+
+
+* abort_condition
+	* 条件とメッセージの組み合わせ、複数セットできるようにしたい。
+	* 結果参照が長い。 `output.task_name.xxxx`
+	  今のタスクの output に限定した変数（プレフィックス）を用意できないか。
+		ret
+		current
+* abort_message
+	* format かけられるように。
+
+
 * precondition でスキップしたときの代替値
-	* 最低限、 output に None くらいは必要。
-	  もしくは isset 関数を用意する？
-	* 未処理の None と処理したうえでの Noen の区別がつかないので、isset のほうがいいかも。
+	* 未処理の None と、処理したうえでの None の区別がつかない。isset のような関数を用意したい。
 	  ⇒  isset 関数に渡そうとした時点で NameError, IndexError, KeyError が発生するのでは。
 	      ast 解析に組み込む必要がありそう。
+	* 難しいので、当面は None 固定で。
+
 
 * Secret の扱い
 	* コマンドラインでも追加できるように。
