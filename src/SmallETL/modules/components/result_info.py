@@ -2,6 +2,11 @@ from typing import Any
 from enum import StrEnum, auto
 
 
+
+class TaskAbort(Exception):
+    pass
+
+
 class TaskStatus(StrEnum):
     Succeeded = auto()
     Aborted = auto()

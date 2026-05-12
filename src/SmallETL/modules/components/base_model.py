@@ -12,7 +12,7 @@ from enum import StrEnum, auto
 
 
 from ..common.shared import evaluater
-from .result_info import TaskResultInfo, TaskStatus
+from .result_info import TaskResultInfo, TaskStatus, TaskAbort
 
 if TYPE_CHECKING:
     from ..workflow import DumpWriter
@@ -28,7 +28,7 @@ _NAME_REGEX:Final[List[str]] = [
     }
 ]
 
-_STOP_MSG_DEFAULT:Final[str] = "*** Task was aborted due to `abort_condition`."
+_STOP_MSG_DEFAULT:Final[str] = "Task was aborted due to `abort_condition`."
 
 
 # 共通
@@ -275,12 +275,14 @@ class ComponentBase():
             if is_abort:
                 # メッセージ表示
                 abort_msg = self.abort_message or _STOP_MSG_DEFAULT
-                logger.info(f"[{task_name}] aborted: {abort_msg}")
+                logger.warning(f"[{task_name}] aborted: {abort_msg}")
                 # ステータス上書き
                 task_result = TaskResultInfo(
                     status = TaskStatus.Aborted,
                     output = task_result.output,
                 )
+                # Workflow Abort
+                raise TaskAbort(f"{abort_msg.rstrip(".")} at [{task_name}]")
 
 
         #------------------------

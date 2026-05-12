@@ -14,7 +14,7 @@ import math
 from enum import IntEnum
 from .components.graph_model import GraphModel
 from .common.shared import evaluater
-from .components.result_info import TaskResultInfo, TaskStatus
+from .components.result_info import TaskResultInfo, TaskStatus, TaskAbort
 from ..libs.json_ex import JsonEx
 
 
@@ -298,6 +298,19 @@ class WorkFlow():
                 "start_time" : start_time,
                 "end_time" : end_time,
                 "status"  : ExitCode.Aborted,
-                "outputs" : None,
+                "outputs" : outputs,
             }
 
+        except TaskAbort as e:
+
+            # 終了処理
+            end_time:datetime = datetime.now()
+            logger.warning(f"[{run_id}] Aborted Workflow `{self.name}`: {str(e)}")
+            dump_writer.put(filename="_outputs.json", content=outputs)
+            return {
+                "run_id" : run_id,
+                "start_time" : start_time,
+                "end_time" : end_time,
+                "status"  : ExitCode.Aborted,
+                "outputs" : outputs,
+            }
