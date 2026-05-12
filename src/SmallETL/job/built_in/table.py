@@ -71,8 +71,8 @@ def join(
     ):
     """join"""
     
-    dt_left     = [dt_left] if isinstance(dt_left, str) else dt_left
-    data_right  = [data_right] if isinstance(data_right, str) else data_right
+    left_on   = [left_on] if isinstance(left_on, str) else left_on
+    right_on  = [right_on] if isinstance(right_on, str) else right_on
 
     dt_left = DataTable(data=data_left)
     dt_right = DataTable(data=data_right)
