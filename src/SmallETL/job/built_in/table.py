@@ -1,4 +1,5 @@
 from typing import List, Dict, Any, Literal, Type, Tuple
+from collections import defaultdict
 
 from .core.data_table import DataTable
 
@@ -172,3 +173,21 @@ def explode(data, keys:List[str], sep:str='_', output_format:str="dict,rows"):
     return __output_format(dt, output_format)
 
 
+
+def eav_to_dict(data:List[List[Dict]], name_key:str, value_key:str) -> List[Dict]:
+    """EntittyAttributeValue のリストをdictに変換"""
+
+    ret:List[Dict] = []
+    for items in data:
+        # ひとまずすべての要素を list で登録しておく
+        temp:Dict[str, Any] = defaultdict(list)
+        for eav_item in items:
+            if name_key in eav_item.keys():
+                key = eav_item.get(name_key)
+                temp[key].append(eav_item.get(value_key, None))
+        # 要素が1つだけの項目は list の１要素目のみをセットする（元に戻す）
+        record = { k: ( v[0] if len(v) == 1 else v) for k,v in temp.items() }
+
+        ret.append(record)
+
+    return ret

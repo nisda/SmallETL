@@ -123,12 +123,34 @@ graph も Component を継承できないか？
 
 ## 課題
 
+* EntityAttributeValue モデルデータの変換。
+  * 以下のようなデータ
+    ```
+	[
+		{ "name": "id"  , "value": 1       , "type": "int", "max_len": 8 },
+		{ "name": "name", "value": "Alice" , "type": "str", "max_len": 30 },
+		{ "name": "age" , "value": 18      , "type": "int", "max_len": 3 },
+	]
+	```
+
+	非常に扱いづらいので変換する仕組みを作りたい。
+
+	DataTable に eav_to_dict(name_key, value_key) を作るのがベスト？
+		-> DataTable、 List[List[Dict]] を扱えたっけ。いけるような気がするけど。
+	同じ name が複数あったら -> list化。
+	暫定で、tableジョブに直書きしてみる。使えそうなら DataTable に反映。
+
+
+
+
 * 各種 mapping 処理
-	dict の value にはマッピング対応しているが、key はできない。
+	dict の key には mapping できない。
+	hash化できないデータは dict の key に使えないという python 仕様の制約はあるが、それは使う側の責任でよい気がする。
+	パラメータで、「変換」「無変換」「str化」を選べればいい？
 
 * localジョブ
 	うまく参照できない条件がある？
-
+		⇒問題なし
 
 * abort_condition
 	* 定義はロード時にチェックできるようにしたいが、後回し。
@@ -136,7 +158,14 @@ graph も Component を継承できないか？
 
 * output_format
 	* ループに対応していない。
-		output_format のトップレベルを List にした場合は、処理結果をループしてマッピングするとか？
+		* output_format のトップレベルを List にした場合は、処理結果をループしてマッピングするとか？
+		* ret が list だったら自動的にループにする？
+			⇒ list の 0番目を取りたい　という需要はある。それと両立できなさそう。
+		* プレースホルダーの {each.*} があれば list にする　とか。
+		  each コンポーネントの each とは別物であることを明確にできるか。
+		* あくまで補助的な機能の位置づけ。どこまでやるべきか。
+		  ただ、このフレームワークで扱うデータは主としてlistデータを想定している。
+		  それに対応すべきなのでは。
 
 * precondition でスキップしたときの代替値
 	* 未処理の None と、処理したうえでの None の区別がつかない。isset のような関数を用意したい。
