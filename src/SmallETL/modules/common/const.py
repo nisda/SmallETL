@@ -4,9 +4,8 @@ from decimal import Decimal, ROUND_HALF_UP, ROUND_FLOOR, ROUND_CEILING
 
 
 #---------------------------------------
-# SAFE_FUNCTION用 カスタム関数
-#---------------------------------------
-
+# evaluater 用の SAFE_FUNCTION 群
+#--------------------------------------
 
 class SafeFunctions():
 
@@ -44,6 +43,28 @@ class SafeFunctions():
         else:
             return default
 
+
+    @staticmethod
+    def __lookups(items:List[Dict], lookup_key:str, lookup_value:str, pickup_key:str|List[str], exclude_null:bool=True) -> List[Any] | List[Dict[str,Any]]:
+
+        # lookup_key + value が一致するデータの pickup_key 項目を dict で抽出。
+        pickup_keys = pickup_key if isinstance(pickup_key, List) else [pickup_key]
+        ret:List[Dict] = []
+        for item in items:
+            if lookup_key in item.keys() and item[lookup_key] == lookup_value:
+                ret.append(
+                    { k: item.get(k, None) for k in pickup_keys }
+                )
+
+        if not isinstance(pickup_key, List):
+            # pickup_key 指定が list でなかったらValueのみを返却
+            # さらに exclude_null = True のときは None を除外
+            ret = [ d[pickup_key] for d in ret if not (exclude_null and d[pickup_key] is None) ]
+            return ret
+        else:            
+            return ret
+
+
     # format で使用できる関数
     SAFE_FUNCITONS:Final[Dict[str, Any]] = {
         # ビルトイン関数
@@ -66,10 +87,6 @@ class SafeFunctions():
         "ceil" : (lambda value, digit=0: SafeFunctions.__num_to_num(value, digit, 'ceil')),
         "type" : (lambda value: type(value).__name__),
         "lookup" : __lookup,
+        "lookups" : __lookups,
     }
-
-
-
-
-
 
