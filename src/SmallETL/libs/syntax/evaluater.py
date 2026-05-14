@@ -16,12 +16,17 @@ class Evaluater():
     }
 
     BIN_OPERATORS = {
+        # 四則演算+α
         ast.Add: operator.add,  # +
         ast.Sub: operator.sub,  # -
         ast.Mult: operator.mul, # *
         ast.Div: operator.truediv, # /
         ast.Pow: operator.pow, # **
         ast.Mod: operator.mod, # %
+        # ビット演算子
+        ast.BitAnd: operator.and_ , # &
+        ast.BitOr: operator.or_ , # |
+        ast.BitXor: operator.xor , # ^
     }
 
     COMPARE_OPERATORS = {
@@ -63,6 +68,8 @@ class Evaluater():
 
 
     def __evaluate_dict(self, node:ast.Dict, context:Dict[str, Any]):
+        """dictの処理"""
+
         result = {}
         for k_node, v_node in zip(node.keys, node.values):
             if k_node is None:
@@ -79,6 +86,8 @@ class Evaluater():
         return result
 
     def __evaluate_set(self, node:ast.Set, context:Dict[str, Any]):
+        """setの処理"""
+
         result = set()
         for elt in node.elts:
             if isinstance(elt, ast.Starred):
@@ -92,6 +101,8 @@ class Evaluater():
         return result
 
     def __evaluate_unary_op(self, node:ast.UnaryOp, context:Dict[str, Any]):
+        """単項演算子の処理"""
+
         val = self.__evaluate_node(node.operand, context)
         op_func = self.UNARY_OPERATORS[type(node.op)]
         return op_func(val)
@@ -107,6 +118,7 @@ class Evaluater():
             raise e
 
     def __evaluate_bin_op(self, node:ast.BinOp, context:Dict[str, Any]):
+        """二項演算子の処理"""
         op_func = self.BIN_OPERATORS[type(node.op)]
         return op_func(
             self.__evaluate_node(node.left, context),
@@ -114,6 +126,8 @@ class Evaluater():
         )
 
     def __evaluate_compare(self, node:ast.Compare, context:Dict[str, Any]):
+        """比較処理"""
+
         left_val = self.__evaluate_node(node.left, context)
         for op, right in zip(node.ops, node.comparators):
             op_func = self.COMPARE_OPERATORS[type(op)]
@@ -141,7 +155,10 @@ class Evaluater():
                     return val
             return val
 
+
     def __evaluate_call(self, node:ast.Call, context:Dict[str, Any]):
+        """function処理"""
+
         # 引数の再帰的評価
         args = [ self.__evaluate_node(arg, context) for arg in node.args ]
         kwargs = { kw.arg: self.__evaluate_node(kw.value, context) for kw in node.keywords }
@@ -181,6 +198,8 @@ class Evaluater():
             return func_to_call(*args, **kwargs)
 
     def __evaluate_attrubute(self, node:ast.Attribute, context:Dict[str, Any]):
+        """Attr処理"""
+
         obj = self.__evaluate_node(node.value, context)
         seg:str = node.attr
 

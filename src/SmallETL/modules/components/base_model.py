@@ -201,13 +201,17 @@ class ComponentBase():
 
         if not precondition_result:
             skip_msg:str = "skipped by `precondition`."
+            skio_file_content = {
+                "status": "skipped",
+                "message": skip_msg,
+            }
 
             # 出力結果はNull固定
             outputs[self.name] = None
 
             # dump出力
             dump_file:str = f"{task_name}.skip.json"
-            dump_writer.put(filename=dump_file, content=skip_msg)
+            dump_writer.put(filename=dump_file, content=skio_file_content)
 
             # 終了
             logger.info(f"[{task_name}] {skip_msg}")
