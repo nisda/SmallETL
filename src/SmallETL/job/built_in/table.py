@@ -174,7 +174,7 @@ def explode(data, keys:List[str], sep:str='_', output_format:str="dict,rows"):
 
 
 
-def eav_to_dict(data:List[List[Dict]], name_key:str, value_key:str) -> List[Dict]:
+def eav_to_dict(data:List[List[Dict]], name_key:str, value_key:str, remove_null:bool=True) -> List[Dict]:
     """EntittyAttributeValue のリストをdictに変換"""
 
     ret:List[Dict] = []
@@ -185,8 +185,16 @@ def eav_to_dict(data:List[List[Dict]], name_key:str, value_key:str) -> List[Dict
             if name_key in eav_item.keys():
                 key = eav_item.get(name_key)
                 temp[key].append(eav_item.get(value_key, None))
+
         # 要素が1つだけの項目は list の１要素目のみをセットする（元に戻す）
         record = { k: ( v[0] if len(v) == 1 else v) for k,v in temp.items() }
+
+        # remove_null=True の場合は、リスト項目から None を除外
+        # ※結果として要素が１つになってもリスト構造は維持する。
+        if remove_null:
+            record = {
+                k: (v) for k, v in temp.items()
+            }
 
         ret.append(record)
 

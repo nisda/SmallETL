@@ -6,9 +6,9 @@
             "name": "pass_01",
             "job": "flow.Pass",
             "parameters" : [
-                {"id": 1, "name": "A"},
-                {"id": 2, "name": "B"},
-                {"id": 3, "name": "C"}
+                {"id": 1, "name": "A", "category": 103},
+                {"id": 2, "name": "B", "category": 101},
+                {"id": 3, "name": "C", "category": 103}
             ]
         },
         {
@@ -21,10 +21,10 @@
                 "round"     : "{round(123.456, 0)}",
                 "floor"     : "{floor(123.456, 2)}",
                 "ceil"      : "{ceil(123.456, 2)}",
-                "lookup1"   : "{lookup(output.pass_01, 'id', 2, 'name')}",
-                "lookup2"   : "{lookup(output.pass_01, 'id', 0, 'name')}",
-                "lookup3"   : "{lookup(output.pass_01, 'id', 0, 'name', '-Unknown-')}",
-                "lookup4"   : "{lookup(output.pass_01, 'id', 3)}"
+                "lookup1"   : "{lookup(output.pass_01, criteria={'category':103})}",
+                "lookup2"   : "{lookup(output.pass_01, criteria={'category':103}, column=['id', 'name'])}",
+                "lookup3"   : "{lookup(output.pass_01, criteria={'category':103}, column=['id'])}",
+                "lookup4"   : "{lookup(output.pass_01, criteria={'category':103}, column='id')}"
             }
         }
     ]

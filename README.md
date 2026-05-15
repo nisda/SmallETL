@@ -123,22 +123,14 @@ graph も Component を継承できないか？
 
 ## 課題
 
-* EntityAttributeValue モデルデータの変換。
-  * 以下のようなデータ
-    ```
-	[
-		{ "name": "id"  , "value": 1       , "type": "int", "max_len": 8 },
-		{ "name": "name", "value": "Alice" , "type": "str", "max_len": 30 },
-		{ "name": "age" , "value": 18      , "type": "int", "max_len": 3 },
-	]
-	```
+* abort.message の複数行対応。
 
-	非常に扱いづらいので変換する仕組みを作りたい。
 
-	DataTable に eav_to_dict(name_key, value_key) を作るのがベスト？
-		-> DataTable、 List[List[Dict]] を扱えたっけ。いけるような気がするけど。
-	同じ name が複数あったら -> list化。
-	暫定で、tableジョブに直書きしてみる。使えそうなら DataTable に反映。
+# ast での eval 再現で、変数と型とファンクションの区別がつかない。
+
+python で ast の構文解析を用いて eval の再現コードを作成しているが、 map関数のようにfunction を渡すタイプの構文はどのように解析すればよいか。
+例） map(str, data) という構文は、ast 上では str 部分が変数なのか関数なのかタイプ名なのかが判断できないと思われる。
+
 
 
 
@@ -148,9 +140,6 @@ graph も Component を継承できないか？
 	hash化できないデータは dict の key に使えないという python 仕様の制約はあるが、それは使う側の責任でよい気がする。
 	パラメータで、「変換」「無変換」「str化」を選べればいい？
 
-* localジョブ
-	うまく参照できない条件がある？
-		⇒問題なし
 
 * abort_condition
 	* 定義はロード時にチェックできるようにしたいが、後回し。
@@ -217,3 +206,6 @@ graph も Component を継承できないか？
 	更新頻度が低いマスタデータ取得などの用途で。
 	カスタムジョブへの反映を考慮して、ジョブ個別で実装するのではなくデコレータなどで用意したい。
 
+
+* ワークフローファイルの分割（外部参照）
+	できてもいいし、できなくてもいい。
