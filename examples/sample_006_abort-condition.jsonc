@@ -2,7 +2,7 @@
     "name": "sample-006-stop",
     "const" : {
         // 各タスクの condition で判定につかう定数。ここを変えればそのタスクで中止される。
-        "abort_task": "pass_01_A"
+        "abort_task": "pass_02"
     },
     "dump_dir" : "{var.work_dir}/dump/{wf.name}/",
     "graph": [
@@ -64,9 +64,14 @@
                 "bbb" : "BBB"
             },
             "abort" : {
-                //  変数も使える
+                // 変数も使える。
+                // 複数行設定もOK ⇒ 半角スペース区切りの１行文字列になる。
                 "condition": "const.abort_task == 'pass_02'",
-                "message"  : "処理中止！  `{const.abort_task}` <- 変数も使えるよ"
+                "message"  : [
+                    "１行目：処理中止。 終了条件={const.abort_task}。",
+                    "２行目：戻り値は {ret} でした。",
+                    "３行目：このように変数も使えるよ。"
+                ]
             }
         },
         {

@@ -301,7 +301,7 @@ class ComponentBase():
         if task_result.status != TaskStatus.Aborted:
             for i, abort_config in enumerate(self.abort):
                 abort_condition:str = abort_config.get("condition", None)
-                abort_message:str   = abort_config.get("message", _STOP_MSG_DEFAULT)
+                abort_message:str|List[str]   = abort_config.get("message", _STOP_MSG_DEFAULT)
 
                 # condition 未設定はエラー
                 if abort_condition is None:
@@ -312,17 +312,22 @@ class ComponentBase():
 
                 if is_abort:
                     # メッセージ調整
-                    abort_message = evaluater.format(abort_message, mapping=mapping_data)
+                    messages = abort_message if isinstance(abort_message, List) else [abort_message]
+                    messages = [
+                        evaluater.format(msg, mapping=mapping_data)
+                        for msg in messages
+                    ]
+                    message:str = ' '.join(messages)
 
                     # メッセージ表示
-                    logger.warning(f"[{task_name}] aborted: {abort_message}")
+                    logger.warning(f"[{task_name}] aborted: {message}")
                     # ステータス上書き
                     task_result = TaskResultInfo(
                         status = TaskStatus.Aborted,
                         output = task_result.output,
                     )
                     # Workflow Abort
-                    raise TaskAbort(f"{abort_message.rstrip(".")} at [{task_name}]")
+                    raise TaskAbort(f"{message.rstrip(".")} at [{task_name}]")
 
 
         #------------------------

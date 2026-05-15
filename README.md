@@ -123,13 +123,14 @@ graph も Component を継承できないか？
 
 ## 課題
 
-* abort.message の複数行対応。
+
+* table の condition を criteria に名称変更すべきか。
 
 
-# ast での eval 再現で、変数と型とファンクションの区別がつかない。
+* ast での eval 再現で、変数と型とファンクションの区別がつかない。
+	python で ast の構文解析を用いて eval の再現コードを作成しているが、 map関数のようにfunction を渡すタイプの構文はどのように解析すればよいか。
+	例） map(str, data) という構文は、ast 上では str 部分が変数なのか関数なのかタイプ名なのかが判断できないと思われる。
 
-python で ast の構文解析を用いて eval の再現コードを作成しているが、 map関数のようにfunction を渡すタイプの構文はどのように解析すればよいか。
-例） map(str, data) という構文は、ast 上では str 部分が変数なのか関数なのかタイプ名なのかが判断できないと思われる。
 
 
 
