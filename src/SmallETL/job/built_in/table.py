@@ -4,17 +4,17 @@ from collections import defaultdict
 from .core.data_table import DataTable
 
 """内部関数：指定出力フォーマットに従って結果出力"""
-def __output_format(dt:DataTable, output_format:str):
+def __return_as(dt:DataTable, return_as:str):
 
     # データ型チェック＆調整
-    if output_format is None:
+    if return_as is None:
         specs = []
-    if isinstance(output_format, (List, Tuple)):
-        specs = output_format
-    elif isinstance(output_format, str):
-        specs = output_format.split(',')
+    if isinstance(return_as, (List, Tuple)):
+        specs = return_as
+    elif isinstance(return_as, str):
+        specs = return_as.split(',')
     else:
-        raise TypeError(f"The data type for `output_format <{type(output_format).__name__}>` is invalid. Only `str` or `list` is expected.")
+        raise TypeError(f"The data type for `return_as <{type(return_as).__name__}>` is invalid. Only `str` or `list` is expected.")
 
     # 空データ除去
     specs = [ v.strip().lower() for v in specs if v.strip() ]
@@ -31,10 +31,10 @@ def __output_format(dt:DataTable, output_format:str):
 
 
 
-def nop(data:Any, output_format:str="dict,rows"):
+def nop(data:Any, return_as:str="dict,rows"):
     """何もしない。出力形式の変更のみ可能。"""
     dt = DataTable(data=data)
-    return __output_format(dt, output_format)
+    return __return_as(dt, return_as)
 
 
 
@@ -42,21 +42,21 @@ def filter(
         data:Any,
         match_with:Dict[str, Any]|List[Dict[str, Any]] = {},
         mismatch_with:Dict[str, Any]|List[Dict[str, Any]] = {},
-        output_format:str="dict,rows"):
+        return_as:str="dict,rows"):
 
     """フィルタリング（条件抽出）"""
     dt_in = DataTable(data=data)
     dt_out = dt_in.filter(match_with=match_with, mismatch_with=mismatch_with)
-    return __output_format(dt_out, output_format)
+    return __return_as(dt_out, return_as)
 
 
 
 
-def grouping(data:Any, group_by:List[str]=[], aggregation:Dict[str, str]={}, output_format:str="dict,rows"):
+def grouping(data:Any, group_by:List[str]=[], aggregation:Dict[str, str]={}, return_as:str="dict,rows"):
     """グルーピング"""
     dt_in = DataTable(data=data)
     dt_out = dt_in.group_by(group_by=group_by, aggregation=aggregation)
-    return __output_format(dt_out, output_format)
+    return __return_as(dt_out, return_as)
 
 
 
@@ -68,7 +68,7 @@ def join(
         right_on:List[str]=None,
         left_prefix:str='left_',
         right_prefix:str='right_',
-        output_format:str="dict,rows",
+        return_as:str="dict,rows",
     ):
     """join"""
     
@@ -87,15 +87,15 @@ def join(
         right_prefix    = right_prefix,
     )
 
-    return __output_format(dt_out, output_format)
+    return __return_as(dt_out, return_as)
 
 
 
-def sort(data, sort_by:List[str], output_format:str="dict,rows"):
+def sort(data, sort_by:List[str], return_as:str="dict,rows"):
     """ソート"""
     dt_in = DataTable(data=data)
     dt_out = dt_in.sort(sort_by=sort_by)
-    return __output_format(dt_out, output_format)
+    return __return_as(dt_out, return_as)
 
 
 
@@ -107,7 +107,7 @@ def convert(
         is_null :Any = None,
         null_if :Any = None,
         errors :Literal['raise', 'coerce', 'ignore'] = 'raise',
-        output_format:str="dict,rows",
+        return_as:str="dict,rows",
     ):
     """データ変換"""
 
@@ -129,19 +129,19 @@ def convert(
     )
 
     return {
-        "output" : __output_format(dt, output_format),
-        "errors" : error_data,  # error_dataのoutput_formatをどうするかは悩みどころ。
+        "output" : __return_as(dt, return_as),
+        "errors" : error_data,  # error_dataのreturn_asをどうするかは悩みどころ。
     }
 
 
 
-def convert_multiple(data, params:List[Dict], output_format:str="dict,rows"):
+def convert_multiple(data, params:List[Dict], return_as:str="dict,rows"):
     """データ変換（複数回一括）"""
 
     errors: List = []
     for param in params:
-        # カラム名が必要であるため繰り返し中の output_format は固定
-        ret = convert(data, **param, output_format="dict,rows")
+        # カラム名が必要であるため繰り返し中の return_as は固定
+        ret = convert(data, **param, return_as="dict,rows")
         # 結果を置き換え
         data = ret["output"]
         errors.append(ret["errors"])
@@ -149,28 +149,28 @@ def convert_multiple(data, params:List[Dict], output_format:str="dict,rows"):
     # 返却
     dt = DataTable(data=data)
     return {
-        "output" : __output_format(dt, output_format),
+        "output" : __return_as(dt, return_as),
         "errors" : errors,
     }
 
 
 
-def rename(data, columns:Dict|List, output_format:str="dict,rows"):
+def rename(data, columns:Dict|List, return_as:str="dict,rows"):
     """カラム名リネーム"""
     dt_in = DataTable(data=data)
     dt_out = dt_in.rename(columns=columns)
-    return __output_format(dt_out, output_format)
+    return __return_as(dt_out, return_as)
 
 
 
-def explode(data, keys:List[str], sep:str='_', output_format:str="dict,rows"):
+def explode(data, keys:List[str], sep:str='_', return_as:str="dict,rows"):
     if isinstance(keys, str):
         keys = [keys]
 
     dt = DataTable(data=data)
     for key in keys:
         dt = dt.explode(key=key, sep=sep)
-    return __output_format(dt, output_format)
+    return __return_as(dt, return_as)
 
 
 
