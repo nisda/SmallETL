@@ -85,49 +85,49 @@ class DataTable():
 
 
         @classmethod
-        def is_contains(cls, data:Any, condition:Any) -> bool:
+        def is_contains(cls, data:Any, criteria:Any) -> bool:
             """
             dict条件合致判断
-            data に condition が含まれているかを判定する。
+            data に criteria が含まれているかを判定する。
             """
 
-            if isinstance(condition, dict):
+            if isinstance(criteria, dict):
                 # dict の場合は子要素を比較
 
                 if not isinstance(data, dict):
                     # 両方dictでなかったらNG
                     return False
 
-                if ( (data.keys() & condition.keys()) ^ condition.keys() ):
-                    # conditionで指定されたkeyがすべて含まれていなかったらNG
+                if ( (data.keys() & criteria.keys()) ^ criteria.keys() ):
+                    # criteriaで指定されたkeyがすべて含まれていなかったらNG
                     return False
 
                 # 再帰呼び出しで下層を比較
-                for k in condition.keys():
-                    if not cls.is_contains(data[k], condition[k]):
+                for k in criteria.keys():
+                    if not cls.is_contains(data[k], criteria[k]):
                         return False
 
                 # すべて通ったらTrue
                 return True
 
-            elif isinstance(condition, list):
+            elif isinstance(criteria, list):
                 # list の場合は、data の値が list に含まれていたらOK
-                for c in condition:
+                for c in criteria:
                     if cls.is_contains(data, c):
                         return True
                 return False
 
-            elif isinstance(condition, re.Pattern):
-                # condition が正規表現の場合、それにマッチしたらOK
-                return bool(condition.match(data))
+            elif isinstance(criteria, re.Pattern):
+                # criteria が正規表現の場合、それにマッチしたらOK
+                return bool(criteria.match(data))
 
-            elif isinstance(condition, Callable):
-                # condition が Callable のときはデータをパラメータにしてコール
-                return condition(data)
+            elif isinstance(criteria, Callable):
+                # criteria が Callable のときはデータをパラメータにしてコール
+                return criteria(data)
 
             else:
                 # それ以外のパターンは値として単純比較
-                return bool(data == condition)
+                return bool(data == criteria)
 
 
 
@@ -490,8 +490,8 @@ class DataTable():
 
         data = [
             d for d in self.rows(type='dict')
-            if ( self._Tools.is_contains(data=d, condition=match_with) ) \
-                and ( not mismatch_with or not self._Tools.is_contains(data=d, condition=mismatch_with))
+            if ( self._Tools.is_contains(data=d, criteria=match_with) ) \
+                and ( not mismatch_with or not self._Tools.is_contains(data=d, criteria=mismatch_with))
         ]
         return DataTable(data=data)
 
@@ -684,13 +684,13 @@ class DataTable():
 
 
     """ソート"""
-    def sort(self, sort_by:List[str]) -> Self:
+    def sort(self, sort_by:List[str], reverse:bool=False) -> Self:
         """
         ソート
         現在の DataTable のデータを指定項目の昇順に並び替える。
         """
         col_idxs:List[int] = self._Tools.indexes(values=self.columns, search=sort_by)
-        self.__records = sorted(self.__records, key=cmp_to_key(lambda x,y: self._Tools.custom_compare(x, y, keys=col_idxs)))
+        self.__records = sorted(self.__records, key=cmp_to_key(lambda x,y: self._Tools.custom_compare(x, y, keys=col_idxs)), reverse=reverse)
         return self
 
 

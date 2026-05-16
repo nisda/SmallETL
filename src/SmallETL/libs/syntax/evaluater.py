@@ -44,12 +44,37 @@ class Evaluater():
 
 
     @property
-    def funcs(self) -> Dict[str, Callable|None]|None:
+    def funcs(self) -> Dict[str, Callable|None]:
         return self.__funcs
 
     @funcs.setter
     def funcs(self, funcs:Dict[str, Callable|None]|None):
-        self.__funcs = funcs
+        if isinstance(funcs, Dict):
+            self.__funcs = {
+                name: (
+                    func if func is not None 
+                    else self.__builtin_funcs.get(name, None)
+                )
+                for name, func in funcs.items()
+            }
+        else:
+            self.__funcs = self.__builtin_funcs
+
+
+    def get_func(self, name:str) -> Callable|None:
+        # 関数定義チェック: 指定関数名が未設定（不許可）
+        if name not in self.funcs.keys():
+            raise PermissionError(f"execution of `{name}` is not permitted.")
+
+        # 関数取得
+        safe_func = self.funcs[name]
+
+        # Functionの実体なし
+        if safe_func is None:
+            raise NameError(f"function '{name}' is not defined")
+        else:
+            return safe_func
+
 
     @property
     def dot_access(self) -> bool:
@@ -63,6 +88,13 @@ class Evaluater():
     # コンストラクタ
     def __init__(self, funcs:Dict[str, Callable|None]|None=None, dot_access:bool=True):
         """コンストラクタ"""
+
+        # ビルトイン関数
+        self.__builtin_funcs:Dict[str, Callable] = {
+            name:getattr(builtins, name) for name in dir(builtins)
+            if isinstance(getattr(builtins, name), Callable)
+        }
+
         self.funcs = funcs
         self.dot_access = dot_access
 
@@ -164,38 +196,14 @@ class Evaluater():
         kwargs = { kw.arg: self.__evaluate_node(kw.value, context) for kw in node.keywords }
 
         if isinstance(node.func, ast.Name):
-            # func の実体を取得して実行
+            # function の場合
             func_name = node.func.id
-
-            # 関数定義あり
-            safe_funcs = self.funcs
-            if isinstance(safe_funcs, Dict):
-                # 定義あり且つfunc名がマッチしない場合は不許可
-                if func_name not in safe_funcs.keys():
-                    raise PermissionError(f"execution of `{func_name}` is not permitted.")
-
-                # functionが登録されている場合はそれを実行
-                func_to_call = safe_funcs.get(func_name)
-                if func_to_call is not None:
-                    return func_to_call(*args, **kwargs)
-
-            # global に指定 function が存在すれば実行
-            if func_name in globals().keys():
-                func_to_call = globals()[func_name]
-                return func_to_call(*args, **kwargs)
-
-            # builtins に指定 function が存在すれば実行
-            if hasattr(builtins, func_name):
-                func_to_call = getattr(builtins, func_name)
-                return func_to_call(*args, **kwargs)
-
-            # 該当する function なし。
-            raise NameError(f"function '{func_name}' is not defined")
-
+            return self.get_func(func_name)(*args, **kwargs)
         else:
             # メソッドなどの場合
             func_to_call = self.__evaluate_node(node.func, context)
             return func_to_call(*args, **kwargs)
+
 
     def __evaluate_attrubute(self, node:ast.Attribute, context:Dict[str, Any]):
         """Attr処理"""
@@ -290,8 +298,16 @@ class Evaluater():
 
         # 変数名／識別子
         if isinstance(node, ast.Name):
-            var_name:str = node.id
-            return context[var_name]
+            # 優先度: マッピング変数 -> SafeFunction
+            name:str = node.id
+            if name in context.keys():
+                return context[name]
+
+            elif name in self.funcs.keys():
+                return self.funcs[name]
+
+            else:
+                raise KeyError(name)
 
         # 添え字
         if isinstance(node, ast.Subscript):
@@ -354,6 +370,9 @@ class Evaluater():
         # ノード情報を取得
         node = tree.body[0].value
 
+        # context(mapping) の調整：None -> {}
+        mapping = {} if mapping is None else mapping
+
         return self.__evaluate_node(node=node, context=mapping)
 
 
@@ -366,6 +385,7 @@ class Evaluater():
             mapping:Dict[str, Any],
             recursive:bool = True,
             original_type:bool=True,
+            convert_dictkey:bool=False,
             errors:Literal['raise', 'coerce', 'ignore']='raise',
         ) -> Any:
         """テンプレートへのデータマッピング（再帰実行可）"""
@@ -414,10 +434,11 @@ class Evaluater():
                     raise
 
         # パラメータまとめ
-        common_params = {
+        recursion_params = {
             "mapping" : mapping,
             "recursive" : recursive,
             "original_type" : original_type,
+            "convert_dictkey" : convert_dictkey,
             "errors" : errors,
         }
 
@@ -430,20 +451,26 @@ class Evaluater():
                 return template
 
         elif isinstance(template, Dict):
-            return {
-                k: self.format(v, **common_params)
-                for k,v in template.items()
-            }
+            if convert_dictkey:
+                return {
+                    self.format(k, **recursion_params): self.format(v, **recursion_params)
+                    for k,v in template.items()
+                }
+            else:
+                return {
+                    k: self.format(v, **recursion_params)
+                    for k,v in template.items()
+                }
 
         elif isinstance(template, List):
             return [
-                self.format(v, **common_params)
+                self.format(v, **recursion_params)
                 for v in template
             ]
 
         elif isinstance(template, Tuple):
             return tuple(
-                self.format(v, **common_params)
+                self.format(v, **recursion_params)
                 for v in template
             )
 
