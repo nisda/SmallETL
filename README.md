@@ -123,23 +123,82 @@ graph も Component を継承できないか？
 
 ## 課題
 
+* inputもdumpを。
+	
 
-* table の condition を criteria に名称変更すべきか。
+* Secret の設定元
+	* 以下の設定方法を提供できるとよし？
+		* workflow ファイル secret ブロック（現行）
+		* コマンドライン渡し（コマンドライン実行の場合）
+			`-secret name1=val1 -secret name2=val2`
+		* パラメータ渡し（ライブラリ実行の場合）
+			Workflow.run(var:Dict, secret:Dict)
+		* シークレット定義ファイルのコマンドライン渡し
+			`-secret-file <path-to-json>`
+		* シークレット定義ファイルの自動読み込み。実行パスにある auto.json のみ。
+			`.secret.auto.json`						... 全てのワークフローに適用
+			`.secret.<workflow-name>.auto.json`		... 名前が一致するワークフローに適用
+			みたいな。
+	* こうなるとワークフロー定義は必要なのか？ という話も出てくるが。あってもいいか。
+	* 複数指定されて同一nameが存在する場合は、以下の優先度で。
+		コマンドライン|パラメータ > シークレット定義ファイル > シークレット定義ファイル（自動読み込み）> ワークフロー定義
+	* ファイルの場合は、var も同じような仕組みを用意したい。
+		* secret と var を分ける必要は無さそう。
+		  １ファイル内をこれを書ける。
+			{
+				"var" : {
+					"name" : "value"
+				},
+				"secret" : {
+					"name" : "value"
+				}
+			}
+
+		* それであれば。設定ファイルの .secret は固定じゃなくていい。
+		  ⇒逆に、何なら読み込み対象とするのかの判断が難しくなる？ auto.json だけでいいのか。
 
 
-* ast での eval 再現で、変数と型とファンクションの区別がつかない。
-	python で ast の構文解析を用いて eval の再現コードを作成しているが、 map関数のようにfunction を渡すタイプの構文はどのように解析すればよいか。
-	例） map(str, data) という構文は、ast 上では str 部分が変数なのか関数なのかタイプ名なのかが判断できないと思われる。
+
+* Secret で使える変数
+	* env は使えていい。
+	* 他は要らないかな。var も不要。
+
+
+* secret を dump でも秘匿
+	* json_ex.dumps にフィルタ追加すれば、dump でも秘匿できるのでは。
+		そうすればメモリ上にしかデータは無いことになる。
+
+* secret をジョブでも追加できるように
+	* ジョブで取得したデータをシークレットに追加できるようにしたい。
+	  ↓下記のように、あくまでジョブ側での制御とする。ジョブの中でシークレットに追加できる仕組みを用意する。
+
+		```python
+		custom/xxx.pu
+			def get_secret(key, secret:bool=True):
+				ret = xxx.get(key)
+				add_secret(ret)		//	←これ
+				return ret
+
+			//	以降、ログに出なくなる。 
+			//	後続で secret.xxx で参照させるのは難しい。nameが決まらないので。
+		```
 
 
 
-
+* ast での eval 再現
+	* 内包表記に未対応
+		⇒難易度が高め。
 
 
 * 各種 mapping 処理
-	dict の key には mapping できない。
-	hash化できないデータは dict の key に使えないという python 仕様の制約はあるが、それは使う側の責任でよい気がする。
-	パラメータで、「変換」「無変換」「str化」を選べればいい？
+	* dict の key には mapping できない。
+	  hash化できないデータは dict の key に使えないという python 仕様の制約はあるが、それは使う側の責任でよい気がする。
+	  パラメータで、「変換」「無変換」「str化」を選べればいい？
+	* -> ライブラリのほうはver0.3.0で対応。
+	  convert_dictkey:bool で指定。デフォルトは False
+	  str化は、str関数でやってもらう。
+	* SmallETL は未対応。
+
 
 
 * abort_condition
@@ -162,27 +221,6 @@ graph も Component を継承できないか？
 	  ⇒  isset 関数に渡そうとした時点で NameError, IndexError, KeyError が発生するのでは。
 	      ast 解析に組み込む必要がありそう。
 	* 難しいので、当面は None 固定で。
-
-
-* Secret の扱い
-	* コマンドラインでも追加できるように。
-		まずコマンドライン実行の仕組みを標準で用意するところから。
-		パラメータ渡しも可能なように。
-	* json_ex.dumps にフィルタ追加すれば、dump でも秘匿できるのでは。
-		そうすればメモリ上にしかデータは無いことになる。
-	* ジョブで取得したデータをシークレットに追加できるようにしたい。
-	  ↓下記のように、あくまでジョブ側での制御とする。ジョブの中でシークレットに追加できる仕組みを用意する。
-
-		```python
-		custom/xxx.pu
-			def get_secret(key, secret:bool=True):
-				ret = xxx.get(key)
-				add_secret(ret)		//	←これ
-				return ret
-
-			//	以降、ログに出なくなる。 
-			//	後続で secret.xxx で参照させるのは難しい。nameが決まらないので。
-		```
 
 
 

@@ -1,0 +1,46 @@
+{
+    "name": "sample-200-s3",
+    "const" : {
+        "s3": {
+            "region" : "ap-northeast-1",
+            "bucket" : "{var.test_bucket_name}",
+            "prefix" : "prefix_test/{wf.start_time:%Y%m%d}"
+        },
+        "file" : {
+            "input" : "{var.work_dir}/input/sample01.csv",
+            "output" : "{var.work_dir}/output/sample01.out.csv"
+        }
+    },
+    "dump_dir" : "{var.work_dir}/dump/{wf.name}/",
+    "graph": [
+        {
+            "name": "upload_file",
+            "job": "aws.s3.put_file",
+            "parameters" : {
+                "bucket"        : "{const.s3.bucket}",
+                "key"           : "{const.s3.prefix}/sample01.csv",
+                "filepath"      : "{const.file.input}",
+                "encoding"      : "utf-8",
+                "region_name"   : "{const.s3.region}"
+            }
+        },
+        {
+            "name": "download_file",
+            "job": "aws.s3.get_file",
+            "parameters" : {
+                "bucket"        : "{const.s3.bucket}",
+                "key"           : "{const.s3.prefix}/sample01.csv",
+                "filepath"      : "{const.file.output}",
+                "type"          : "str",
+                "encoding"      : "utf-8",
+                "region_name"   : "{const.s3.region}"
+            }
+        },
+        {
+            "name": "dummy",
+            "job": "flow.Pass",
+            "parameters" : {
+            }
+        }
+    ]
+}
