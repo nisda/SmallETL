@@ -19,6 +19,7 @@
                 "text" : "DUMMY1",
                 "secret/apikey"         : "{secret.apikey}",
                 "secret/python_path"    : "{secret.python_path}",
+                "secret/from_param"     : "{secret.from_param}",
                 "const/apikey_con"      : "{const.apikey_con}",
                 "const/skip_flag"       : "{const.skip_flag}",
                 "env/python_path"       : "{env.PYTHON_PATH}",

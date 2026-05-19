@@ -194,7 +194,7 @@ class WorkFlow():
         return
 
 
-    def run(self, var:Dict[str, Any]={}) -> str:
+    def run(self, vars:Dict[str, Any]={}, secrets:Dict[str, Any]={}) -> str:
         '''実行ワークフロー実行'''
 
         # run_id 生成
@@ -206,19 +206,22 @@ class WorkFlow():
         # 変数の生成
         #------------------------------
 
-        # 基底: var, env
-        variables:Dict[str, Any] = {
-            "var" : var,
-            "env" : os.environ.copy(),
+        # 環境変数
+        env_vars = {
+            "env": os.environ.copy()
         }
 
-        # secret: ver, env 使用可
-        secret_vars:Dict[str, Any] = \
-            evaluater.format(self.secret, mapping=variables)
+        # var: env割り当て
+        vars =  evaluater.format(vars, mapping=env_vars)
 
-        # const: var, env, wf, secret 使用可
+        # secret: マージ & env割り当て
+        secret_vars = self.secret | secrets
+        secret_vars = evaluater.format(secret_vars, mapping=env_vars)
+
+        # const: env, var, secret, wf 使用可
         variables = {
-            **variables,
+            **env_vars,
+            "var" : vars,
             "secret" : secret_vars,
             "wf"    : {
                 "name" : self.name,

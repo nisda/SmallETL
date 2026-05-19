@@ -12,7 +12,7 @@ python ./workflow/sample_01.json --log-level DEBUG
 | -- | -- |-- |
 | name | str | - |
 | description | str | - |
-| secret | dict | `var` `env` |
+| secret | dict | `env` |
 | const | dict | `var` `env` `wf` `secret` |
 | dump_dir | str | `var` `env` `wf` `secret` `const` |
 | graph | list | `var` `env` `wf` `secret` `const` `output`  |
@@ -123,8 +123,6 @@ graph も Component を継承できないか？
 
 ## 課題
 
-* inputもdumpを。
-	
 
 * Secret の設定元
 	* 以下の設定方法を提供できるとよし？
@@ -132,7 +130,6 @@ graph も Component を継承できないか？
 		* コマンドライン渡し（コマンドライン実行の場合）
 			`-secret name1=val1 -secret name2=val2`
 		* パラメータ渡し（ライブラリ実行の場合）
-			Workflow.run(var:Dict, secret:Dict)
 		* シークレット定義ファイルのコマンドライン渡し
 			`-secret-file <path-to-json>`
 		* シークレット定義ファイルの自動読み込み。実行パスにある auto.json のみ。
@@ -142,6 +139,8 @@ graph も Component を継承できないか？
 	* こうなるとワークフロー定義は必要なのか？ という話も出てくるが。あってもいいか。
 	* 複数指定されて同一nameが存在する場合は、以下の優先度で。
 		コマンドライン|パラメータ > シークレット定義ファイル > シークレット定義ファイル（自動読み込み）> ワークフロー定義
+	* 確定するのは run（実行）時。var と同じ。
+		同じワークフローを、変数/シークレットを変更して使いまわしたいという要望はあるはず。
 	* ファイルの場合は、var も同じような仕組みを用意したい。
 		* secret と var を分ける必要は無さそう。
 		  １ファイル内をこれを書ける。
@@ -153,16 +152,29 @@ graph も Component を継承できないか？
 					"name" : "value"
 				}
 			}
+		* まとめる必要性もあまりないが…。
 
 		* それであれば。設定ファイルの .secret は固定じゃなくていい。
 		  ⇒逆に、何なら読み込み対象とするのかの判断が難しくなる？ auto.json だけでいいのか。
-
 
 
 * Secret で使える変数
 	* env は使えていい。
 	* 他は要らないかな。var も不要。
 
+* var ファイル / secret ファイル読み込み
+	* 自動読み込みでないなら、ファイルの命名規則は必要ない。
+	* 自動読み込みファイル名の案
+		*.var.auto.json
+		*.secret.auto.json
+		*.setting.auto.json
+	* ファイル名で var/secret を判断するか、ファイルの中身で判断するか。
+		{
+			"var": {},
+			"secret": {}
+		}
+	* 一般的には `.env` か？
+		⇒ ローカル限定で環境変数を設定する　以上の役割は持たせないほうが良さそう。
 
 * secret を dump でも秘匿
 	* json_ex.dumps にフィルタ追加すれば、dump でも秘匿できるのでは。

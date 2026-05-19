@@ -45,7 +45,7 @@ if __name__ == '__main__':
 
     # ワークフロー実行
     wf:WorkFlow = WorkFlow(filepath=args.workflow_path, encoding="utf-8")
-    ret = wf.run(var={"work_dir": WORK_DIR})
+    ret = wf.run(vars={"work_dir": WORK_DIR}, secrets={"from_param": "FROM_PARAM_VALUE"})
 
     # 終了
     sys.exit(0)
