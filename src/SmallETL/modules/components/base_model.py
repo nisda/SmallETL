@@ -201,7 +201,7 @@ class ComponentBase():
 
         if not precondition_result:
             skip_msg:str = "skipped by `precondition`."
-            skio_file_content = {
+            skip_file_content = {
                 "status": "skipped",
                 "message": skip_msg,
             }
@@ -211,7 +211,7 @@ class ComponentBase():
 
             # dump出力
             dump_file:str = f"{task_name}.skip.json"
-            dump_writer.put(filename=dump_file, content=skio_file_content)
+            dump_writer.put(filename=dump_file, content=skip_file_content)
 
             # 終了
             logger.info(f"[{task_name}] {skip_msg}")
@@ -246,6 +246,17 @@ class ComponentBase():
             logger.info(f"[{task_name}] run: args.len={len(args)}, kwargs.len={len(kwargs)}")
             logger.debug(f"[{task_name}] params.args   = {args}")
             logger.debug(f"[{task_name}] params.kwargs = {kwargs}")
+
+            # dump出力
+            dump_file:str = f"{task_name}.input.json"
+            dump_writer.put(filename=dump_file, content={
+                "name"  : self.name,
+                "job"   : self.job,
+                "parameters": {
+                    "args"  : args,
+                    "kwargs": kwargs
+                }
+            })
 
             task_result:TaskResultInfo = self._run(
                 task_name=task_name,
@@ -285,12 +296,12 @@ class ComponentBase():
         #------------------------
         # dump出力
         #------------------------
-        dump_file:str = f"{task_name}.json"
+        dump_file:str = f"{task_name}.output.json"
         dump_writer.put(filename=dump_file, content=result_formatted)
 
         # output_format の指定がある場合はオリジナル（変更前）も出力
         if self.output_format:
-            dump_file_org:str = f"{task_name}.org.json"
+            dump_file_org:str = f"{task_name}.output.org.json"
             dump_writer.put(filename=dump_file_org, content=result_original)
 
 
