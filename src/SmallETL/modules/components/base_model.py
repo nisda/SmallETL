@@ -277,32 +277,16 @@ class ComponentBase():
             )
 
         #------------------------
-        #  実行結果を整形＆セット
+        # dump 出力その１：オリジナル
         #------------------------
-
-        # 実行結果にフォーマットを適用
-        if self.output_format is None:
-            result_original     = task_result.output
-            result_formatted    = task_result.output
-        else:
-            result_original     = task_result.output
-            result_formatted    = evaluater.format(self.output_format, mapping={ "ret": task_result.output })
-
-        # 実行結果にフォーマット適用後のデータをセット。
-        outputs[self.name]  = result_formatted
-        mapping_data["ret"] = result_formatted
-
-
-        #------------------------
-        # dump出力
-        #------------------------
-        dump_file:str = f"{task_name}.output.json"
-        dump_writer.put(filename=dump_file, content=result_formatted)
-
-        # output_format の指定がある場合はオリジナル（変更前）も出力
         if self.output_format:
+            # output_format 指定がある場合は output.org に出力
             dump_file_org:str = f"{task_name}.output.org.json"
-            dump_writer.put(filename=dump_file_org, content=result_original)
+            dump_writer.put(filename=dump_file_org, content=task_result.output)
+        else:
+            # output_format 指定がない場合は output に出力
+            dump_file_org:str = f"{task_name}.output.json"
+            dump_writer.put(filename=dump_file_org, content=task_result.output)
 
 
 
@@ -310,35 +294,39 @@ class ComponentBase():
         # 中止判定（abort）
         #------------------------
         if task_result.status != TaskStatus.Aborted:
-            for i, abort_config in enumerate(self.abort):
-                abort_condition:str = abort_config.get("condition", None)
-                abort_message:str|List[str]   = abort_config.get("message", _STOP_MSG_DEFAULT)
+            try:
+                self.__judge_abort(task_name=task_name, mapping_data={
+                    **mapping_data,
+                    "ret" : task_result.output
+                })
+            except Exception as ex:
+                # ここまでの実行結果を保存
+                outputs[self.name]  = task_result.output
+                # 例外を raise
+                raise
 
-                # condition 未設定はエラー
-                if abort_condition is None:
-                    raise ValueError(f"`abort.condition` is not set in `{task_name}.abort[{i}]`")
 
-                # 判定
-                is_abort:bool = evaluater.eval(abort_condition, mapping=mapping_data)
+        #------------------------
+        #  実行結果を整形＆セット
+        #------------------------
 
-                if is_abort:
-                    # メッセージ調整
-                    messages = abort_message if isinstance(abort_message, List) else [abort_message]
-                    messages = [
-                        evaluater.format(msg, mapping=mapping_data)
-                        for msg in messages
-                    ]
-                    message:str = ' '.join(messages)
+        # 実行結果にフォーマットを適用
+        if self.output_format is None:
+            result_formatted    = task_result.output
+        else:
+            result_formatted    = evaluater.format(self.output_format, mapping={**mapping_data, "ret": task_result.output })
 
-                    # メッセージ表示
-                    logger.warning(f"[{task_name}] aborted: {message}")
-                    # ステータス上書き
-                    task_result = TaskResultInfo(
-                        status = TaskStatus.Aborted,
-                        output = task_result.output,
-                    )
-                    # Workflow Abort
-                    raise TaskAbort(f"{message.rstrip(".")} at [{task_name}]")
+        # 実行結果にフォーマット適用後のデータをセット。
+        outputs[self.name]  = result_formatted
+
+
+        #------------------------
+        # dump 出力その２：整形後
+        #------------------------
+        # オリジナルは出力済み
+        if self.output_format:
+            dump_file:str = f"{task_name}.output.json"
+            dump_writer.put(filename=dump_file, content=result_formatted)
 
 
         #------------------------
@@ -347,7 +335,45 @@ class ComponentBase():
         logger.info("[{}] {}: output.type = <{}>, output.len = {}".format(
             task_name,
             task_result.status,
-            type(task_result.output).__name__,
-            len(task_result.output) if hasattr(task_result.output, '__len__') else None,
+            type(result_formatted).__name__,
+            len(result_formatted) if hasattr(result_formatted, '__len__') else None,
         ))
         return task_result
+
+
+
+    def __judge_abort(self, task_name:str, mapping_data:Dict):
+        """中止判定"""
+
+        # if task_result.status != TaskStatus.Aborted:
+
+
+        for i, abort_config in enumerate(self.abort):
+
+            # 設定情報を取得
+            abort_condition:str = abort_config.get("condition", None)
+            abort_message:str|List[str]   = abort_config.get("message", _STOP_MSG_DEFAULT)
+
+            # condition 未設定はエラー
+            if abort_condition is None:
+                raise ValueError(f"`abort.condition` is not set in `{task_name}.abort[{i}]`")
+
+            # 判定
+            is_abort:bool = evaluater.eval(abort_condition, mapping=mapping_data)
+
+            if is_abort:
+                # メッセージ調整
+                messages = abort_message if isinstance(abort_message, List) else [abort_message]
+                messages = [
+                    evaluater.format(msg, mapping=mapping_data)
+                    for msg in messages
+                ]
+                message:str = ' '.join(messages)
+
+                # メッセージ表示
+                logger.warning(f"[{task_name}] aborted: {message}")
+
+                # 例外を raise
+                raise TaskAbort(f"{message.rstrip(".")} at [{task_name}]")
+
+

@@ -15,25 +15,58 @@
         {
             "name": "pass_02",
             "job": "flow.Pass",
-            "description" : "実行結果の0番目を抽出",
             "parameters" : [
                 {"id": 1, "name": "Alice"   , "age": 18},
                 {"id": 2, "name": "Bob"     , "age": 32},
                 {"id": 3, "name": "Cris"    , "age": 24}
             ],
-            "output_format" : "{ret[1]}"
+            // 実行結果の0番目を抽出
+            "output_format" : "{ret[0]}"
         },
         {
             "name": "pass_03",
             "job": "flow.Pass",
-            "description" : "実行結果の構造も変更する",
             "parameters" : [
                 {"id": 1, "name": "Alice"   , "age": 18},
                 {"id": 2, "name": "Bob"     , "age": 32},
                 {"id": 3, "name": "Cris"    , "age": 24}
             ],
+            // 実行結果の構造も変更できる
             // ループはできないので、単一データ以外での使いどころは難しい。
-            "output_format" : {"id": "{ret[0].id}", "attr": ["{ret[0].name}", "{ret[0].age}"]}               
+            "output_format" : {
+                "id": "{ret[0].id}",
+                "attr": [
+                    "{ret[1].name}",
+                    "{ret[2].age}"
+                ]
+            }
+        },
+        {
+            "name": "pass_04",
+            "job": "flow.Pass",
+            "parameters" : [
+                {"id": 1, "name": "Alice"   , "age": 18},
+                {"id": 2, "name": "Bob"     , "age": 32},
+                {"id": 3, "name": "Cris"    , "age": 24}
+            ],
+            // 関数もOK
+            "output_format" : {
+                "ret_3" : "{lookup(ret, criteria={'id': 3})}",
+                "ret_len" : "{len(ret)}"
+            }
+        },
+        {
+            "name": "pass_05",
+            "job": "flow.Pass",
+            "parameters" : [
+                {"id": 1, "name": "Alice"   , "age": 18},
+                {"id": 2, "name": "Bob"     , "age": 32},
+                {"id": 3, "name": "Cris"    , "age": 24}
+            ],
+            // ret以外の変数も使える
+            "output_format" : {
+                "wf_started": "{wf.start_time}"
+            }
         }
     ]
 }

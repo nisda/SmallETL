@@ -1,5 +1,5 @@
 {
-    "name": "sample-007-safe-funcs",
+    "name": "sample-006-safe-funcs",
     "dump_dir" : "{var.work_dir}/dump/{wf.name}/",
     "graph": [
         {
