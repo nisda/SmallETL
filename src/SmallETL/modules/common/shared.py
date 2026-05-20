@@ -173,6 +173,7 @@ class SafeFunctions():
         "list" : None,
         "dict" : None,
         "tuple" : None,
+        "set" : None,
 
         # ビルトイン関数/計算
         "max" : None,
@@ -181,8 +182,13 @@ class SafeFunctions():
         "abs" : None,
 
         # ビルトイン関数/その他
+        "all": None,
+        "any": None,
         "len" : None,
-        # "map" : None,     # 構文解析を修正しないと実現できない。
+        "range": None,
+        "map" : None,
+        "sorted" : None,
+        "reversed" : None,
 
         # カスタム関数
         "round" : (lambda value, digit=0: SafeFunctions._num_to_num(value, digit, 'round')),
